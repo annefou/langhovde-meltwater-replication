@@ -50,7 +50,9 @@ The **original paper's** DOI (bare, starting `10.` — the form prepends `https:
 > location, keep one block. For a pooled multi-region coverage, keep one block and add
 > each place in the form's location search (it builds the GeometryCollection).
 
-### Location A
+### Location A — Langhovde Glacier (primary study area)
+
+> Verified with `verify_quote` (`normalized`, p. 3, `paper/sugiyama-2026.pdf`). 214 characters. The paper text states no coordinates. Fig. 1a/b has graticule and UTM-style labels, but those are figure annotations, so `wkt` is left blank for the form geocoder or the map.
 
 <!-- field: quoteType -->
 **Quote type** (radio: whole | ends, required) — `whole` if under 500 characters (usual); `ends` only for a long start/end passage.
@@ -63,7 +65,7 @@ whole
 **Quoted Text** (textarea, required) — the **verbatim** sentence from the paper naming *this* area. Character-for-character from the PDF; never paraphrase. Each location needs its own quote.
 
 ```
-
+From December 2021 to February 2022, we conducted hot-water drilling, borehole and glacier surface measurements on Langhovde Glacier, a 3-km-wide outlet glacier located on Lützow-Holm Bay, East Antarctica (Fig. 1).
 ```
 
 <!-- field: quotation-end -->
@@ -77,14 +79,14 @@ whole
 **Short ID for location** (text input, required) — slug for the URI suffix (lowercase, hyphenated), unique per location. E.g. `sado-estuary`, `westerschelde`, `amazon-basin`.
 
 ```
-
+langhovde-glacier
 ```
 
 <!-- field: location-label -->
 **Area name** (text input, required) — human-readable name as the paper frames it. E.g. `Sado Estuary, Portugal`. Typing this into the form's **location search** geocodes it and fills the geometry.
 
 ```
-
+Langhovde Glacier, Lützow-Holm Bay, East Antarctica
 ```
 
 <!-- field: geometry -->
@@ -105,10 +107,69 @@ coverage
 **Comment** (textarea, required) — one or two sentences on **how the quoted text supports** this being the coverage. Grounded in the paper, no new claims.
 
 ```
+The quoted Results sentence names Langhovde Glacier on Lützow-Holm Bay, East Antarctica, as the site of all drilling, borehole and surface measurements (December 2021 to February 2022). The paper's findings (basal water pressure, ice speed, uplift, tidal connection) all come from boreholes and GNSS stations on this glacier near its grounding line.
+```
+
+### Location B — Syowa Station (OPTIONAL: ancillary data site; delete this block if you only want the study area)
+
+> Verified with `verify_quote` (`whitespace_insensitive`, p. 6; pdftotext confirms the word spacing). 162 characters. Recommendation: keep it only if you want the tide and climate data source to be place-searchable. The paper's findings are about Langhovde Glacier, not Syowa.
+
+<!-- field: quoteType -->
+**Quote type** (radio: whole | ends, required) — `whole` if under 500 characters (usual); `ends` only for a long start/end passage.
+
+```
+whole
+```
+
+<!-- field: quotation -->
+**Quoted Text** (textarea, required) — the **verbatim** sentence from the paper naming *this* area. Character-for-character from the PDF; never paraphrase. Each location needs its own quote.
+
+```
+Ocean tide data are available at Syowa Station (Fig. 1a), where year-around sea-level measurements with pressure sensors have been performed since 1979 (ref. 69).
+```
+
+<!-- field: quotation-end -->
+**Quoted Text End** (textarea, optional — only if quote type = ends). Leave blank for `whole`.
 
 ```
 
-### Location B *(duplicate the block above for each further distinct site; delete if only one location)*
+```
+
+<!-- field: location -->
+**Short ID for location** (text input, required) — slug for the URI suffix (lowercase, hyphenated), unique per location. E.g. `sado-estuary`, `westerschelde`, `amazon-basin`.
+
+```
+syowa-station
+```
+
+<!-- field: location-label -->
+**Area name** (text input, required) — human-readable name as the paper frames it. E.g. `Sado Estuary, Portugal`. Typing this into the form's **location search** geocodes it and fills the geometry.
+
+```
+Syowa Station, Antarctica
+```
+
+<!-- field: geometry -->
+**Short ID for geometry** (text input, optional) — URI suffix for the geometry node; `coverage` is fine.
+
+```
+coverage
+```
+
+<!-- field: wkt -->
+**Geometry as Well-known Text (WKT)** (map / text, resolved in the form) — **Do NOT hand-write coordinates.** The form geocodes the area name to a polygon, or you draw it on the map. Only paste explicit `POINT(...)` / `POLYGON((...))` if the paper **states coordinates verbatim** — copied exactly. A hallucinated bounding box is a fabricated datum; leave blank otherwise.
+
+```
+
+```
+
+<!-- field: comment -->
+**Comment** (textarea, required) — one or two sentences on **how the quoted text supports** this being the coverage. Grounded in the paper, no new claims.
+
+```
+The quoted Methods sentence names Syowa Station as the source of the ocean tide record used to show that the glacier bed is hydraulically connected to the sub-shelf cavity. The same station supplies the long-term temperature and rain record behind the paper's climate context. It is an ancillary data site, not the glaciological study area.
+```
+
 
 ## Publication note
 

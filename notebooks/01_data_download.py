@@ -16,88 +16,138 @@
 # %% [markdown]
 # # 01 — Data download
 #
-# This notebook fetches all input data needed by the replication pipeline.
-# Every dataset is downloaded from a citable source (Zenodo, GBIF, Copernicus,
-# etc.) and a record of the source is logged into `data/raw/sources.json`
-# alongside the data files.
+# Fetches the authors' data deposit for Sugiyama et al. (2026), *Acceleration of an
+# Antarctic outlet glacier driven by surface meltwater input to the base*
+# (Nature Communications, [doi:10.1038/s41467-026-72724-x](https://doi.org/10.1038/s41467-026-72724-x)):
 #
-# **Self-contained data:** The repository ships without input data. This
-# notebook is the only path that brings data into `data/raw/`. A user cloning
-# the repo and running this notebook should get a complete reproducible run.
+# - **Mendeley Data** [doi:10.17632/8wvtxg53ry.1](https://doi.org/10.17632/8wvtxg53ry.1),
+#   version 1, CC BY 4.0. GNSS positions, borehole pressure, AWS, Syowa tide and
+#   temperature records, plus the authors' MATLAB plotting scripts.
 #
-# **Credentials:** if your replication uses a credentialled API, document the
-# credential setup at the top of this notebook, including:
+# The deposit is fetched as one zip and extracted to `data/raw/mendeley/`. Each
+# extracted file is checked against the SHA-256 that the Mendeley public API
+# publishes for it, so a silently changed deposit fails here rather than downstream.
+# The zip itself is generated on the fly by Mendeley, so its own hash is logged but
+# not used for verification.
 #
-# - Where the user gets the credential (URL).
-# - Where it lives on disk (or which env var Claude expects).
-# - The corresponding GitHub Actions secret name(s) for CI.
+# No credentials are needed. Independent data for Arm B (JMA Syowa, ERA5, satellite
+# imagery) is added in later cells as that arm starts.
 
 # %%
+import hashlib
 import json
+import zipfile
 from pathlib import Path
 
 import requests
 
 # %%
 RAW_DIR = Path("../data/raw")
+MENDELEY_DIR = RAW_DIR / "mendeley"
 RAW_DIR.mkdir(parents=True, exist_ok=True)
 
-# %% [markdown]
-# ## Source registry
-#
-# Replace the placeholder source(s) below with your actual data sources. Each
-# entry should record: name, URL or DOI, license, accessed-on date, and SHA-256
-# of the downloaded file (computed and added after first download).
+DATASET_ID = "8wvtxg53ry"
+VERSION = 1
+API = "https://data.mendeley.com/public-api"
+ZIP_URL = f"{API}/zip/{DATASET_ID}/download/{VERSION}"
+ZIP_PATH = RAW_DIR / f"mendeley_{DATASET_ID}_v{VERSION}.zip"
 
-# %%
 SOURCES = [
     {
-        "name": "<dataset-name>",
-        "doi": "<10.x/y or null>",
-        "url": "<https://...>",
-        "license": "<CC-BY-4.0 / CC-BY-NC-4.0 / public-domain / ...>",
+        "name": "Sugiyama et al. 2026 data deposit (Mendeley Data)",
+        "doi": "10.17632/8wvtxg53ry.1",
+        "url": ZIP_URL,
+        "license": "CC-BY-4.0",
         "accessed_on": "2026-10-06",
-        "sha256": None,  # filled after first download
+        "sha256": None,  # zip hash, filled after download
     },
-    # Add more sources here as needed.
 ]
 
 
+# %%
+def sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def expected_checksums() -> dict[str, str]:
+    """Map relative path -> SHA-256 for every file, from the Mendeley public API."""
+    def files_in(folder_id: str) -> list[dict]:
+        r = requests.get(
+            f"{API}/datasets/{DATASET_ID}/files",
+            params={"folder_id": folder_id, "version": VERSION},
+            timeout=60,
+        )
+        r.raise_for_status()
+        return r.json()
+
+    out = {f["filename"]: f["content_details"]["sha256_hash"] for f in files_in("root")}
+    folders = requests.get(f"{API}/datasets/{DATASET_ID}/folders/{VERSION}", timeout=60)
+    folders.raise_for_status()
+    for folder in folders.json():
+        for f in files_in(folder["id"]):
+            out[f"{folder['name']}/{f['filename']}"] = f["content_details"]["sha256_hash"]
+    return out
+
+
+# %%
+expected = expected_checksums()
+print(f"Mendeley API lists {len(expected)} files")
+
 # %% [markdown]
-# ## Download
+# ## Download and extract
 
 # %%
-def download_source(source: dict) -> Path:
-    """Fetch a single source into data/raw/. Replace with your real implementation."""
-    # Example skeleton — adapt to your data source's API:
-    # response = requests.get(source["url"], stream=True, timeout=300)
-    # response.raise_for_status()
-    # out_path = RAW_DIR / Path(source["url"]).name
-    # with open(out_path, "wb") as f:
-    #     for chunk in response.iter_content(chunk_size=8192):
-    #         f.write(chunk)
-    # return out_path
-    raise NotImplementedError(
-        "Implement download for: " + source["name"] + ". "
-        "See data/README.md for common patterns."
-    )
+if not ZIP_PATH.exists():
+    with requests.get(ZIP_URL, stream=True, timeout=600) as r:
+        r.raise_for_status()
+        tmp = ZIP_PATH.with_suffix(".part")
+        with open(tmp, "wb") as f:
+            for chunk in r.iter_content(chunk_size=1 << 20):
+                f.write(chunk)
+        tmp.rename(ZIP_PATH)
+print(f"{ZIP_PATH.name}: {ZIP_PATH.stat().st_size / 1e6:.1f} MB")
+SOURCES[0]["sha256"] = sha256(ZIP_PATH)
 
+with zipfile.ZipFile(ZIP_PATH) as z:
+    z.extractall(MENDELEY_DIR)
+
+# %% [markdown]
+# ## Verify against the published checksums
 
 # %%
-# Uncomment when SOURCES is populated:
-# for source in SOURCES:
-#     print(f"Fetching {source['name']}...")
-#     path = download_source(source)
-#     print(f"  -> {path}")
+extracted = {
+    p.relative_to(MENDELEY_DIR).as_posix(): p for p in MENDELEY_DIR.rglob("*") if p.is_file()
+}
+# The zip may wrap everything in a top-level directory; match on the API's relative paths.
+def locate(rel: str) -> Path | None:
+    matches = [p for k, p in extracted.items() if k == rel or k.endswith("/" + rel)]
+    return matches[0] if len(matches) == 1 else None
+
+manifest, problems = {}, []
+for rel, want in sorted(expected.items()):
+    path = locate(rel)
+    if path is None:
+        problems.append(f"missing or ambiguous: {rel}")
+        continue
+    got = sha256(path)
+    manifest[rel] = got
+    if got != want:
+        problems.append(f"checksum mismatch: {rel}")
+
+unexpected = len(extracted) - len(manifest)
+print(f"verified {len(manifest) - sum('mismatch' in p for p in problems)}/{len(expected)} files; "
+      f"{unexpected} extra file(s) in zip")
+if problems:
+    raise RuntimeError("Deposit verification failed:\n" + "\n".join(problems))
 
 # %% [markdown]
 # ## Source log
-#
-# Persist the source registry to disk so that downstream notebooks can audit
-# what data was used and when.
 
 # %%
 with open(RAW_DIR / "sources.json", "w") as f:
-    json.dump({"sources": SOURCES}, f, indent=2)
-
-print(f"Logged {len(SOURCES)} source(s) to {RAW_DIR / 'sources.json'}")
+    json.dump({"sources": SOURCES, "mendeley_files_sha256": manifest}, f, indent=2)
+print(f"Logged {len(SOURCES)} source(s) and {len(manifest)} file checksums to {RAW_DIR / 'sources.json'}")

@@ -27,7 +27,7 @@ rule all:
 # never assumed to exist locally. See CLAUDE.md § Self-contained data.
 rule data_download:
     output:
-        f"{DATA}/raw/dataset.zip",
+        f"{DATA}/raw/sources.json",
     log:
         f"{RESULTS}/logs/01_data_download.log",
     shell:
@@ -37,7 +37,7 @@ rule data_download:
 # ---------- 02: Data clean ----------
 rule data_clean:
     input:
-        f"{DATA}/raw/dataset.zip",
+        f"{DATA}/raw/sources.json",
     output:
         f"{DATA}/clean/dataset.parquet",
     shell:
