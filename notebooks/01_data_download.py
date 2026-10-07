@@ -39,6 +39,7 @@ import json
 import zipfile
 from pathlib import Path
 
+import pandas as pd
 import requests
 
 # %%
@@ -207,6 +208,53 @@ SOURCES.append({
     "sha256": None,  # one file per month; see data/raw/jma/
 })
 print(f"JMA: {len(months)} months, {fetched} fetched now, {len(list(JMA_DIR.glob('*.html')))} cached")
+
+# %% [markdown]
+# ## JMA Syowa hourly station pressure, 31 Dec 2021 – 6 Feb 2022 (Arm B, B-pressure)
+#
+# One page per day, hours 1–24 in Syowa local time (UTC+3). Same terms as above.
+
+# %%
+JMA_H_DIR = RAW_DIR / "jma_hourly"
+JMA_H_DIR.mkdir(exist_ok=True)
+JMA_H_URL = ("https://www.data.jma.go.jp/stats/etrn/view/hourly_s1.php"
+             "?prec_no=99&block_no=89532&year={y}&month={m}&day={d}&view=")
+days = pd.date_range("2021-12-31", "2022-02-06", freq="D")
+for day in days:
+    path = JMA_H_DIR / f"syowa_hourly_{day:%Y%m%d}.html"
+    if not path.exists():
+        r = requests.get(JMA_H_URL.format(y=day.year, m=day.month, d=day.day), timeout=60)
+        r.raise_for_status()
+        path.write_bytes(r.content)
+        time.sleep(1)
+SOURCES.append({
+    "name": "JMA past weather data, Syowa (89532), hourly values, 2021-12-31 to 2022-02-06",
+    "doi": None, "url": JMA_H_URL.format(y="YYYY", m="M", d="D"),
+    "license": "JMA website terms (Public Data Terms of Use v1.0, attribution)",
+    "accessed_on": "2026-10-07", "sha256": None,
+})
+print(f"JMA hourly: {len(list(JMA_H_DIR.glob('*.html')))} days cached")
+
+# %% [markdown]
+# ## Atmospheric-river days at Syowa (Arm B, B-AR)
+#
+# Favier (2025), merged ERA5–MERRA-2 AR catalogues at staffed Antarctic stations,
+# doi:10.5281/zenodo.17165410 (CC BY 4.0). One date per AR-associated day. The
+# record's ±1-day convention is already applied; the documented span is 1980 to March 2022.
+
+# %%
+AR_URL = "https://zenodo.org/api/records/17165410/files/Syowa_ARday.csv/content"
+AR_PATH = RAW_DIR / "favier2025_Syowa_ARday.csv"
+if not AR_PATH.exists():
+    r = requests.get(AR_URL, timeout=120)
+    r.raise_for_status()
+    AR_PATH.write_bytes(r.content)
+SOURCES.append({
+    "name": "Favier (2025) merged ERA5-MERRA-2 atmospheric river catalogs at staffed Antarctic stations: Syowa",
+    "doi": "10.5281/zenodo.17165410", "url": AR_URL, "license": "CC-BY-4.0",
+    "accessed_on": "2026-10-07", "sha256": sha256(AR_PATH),
+})
+print(f"{AR_PATH.name}: {sum(1 for _ in AR_PATH.open())} AR days")
 
 # %% [markdown]
 # ## Source log

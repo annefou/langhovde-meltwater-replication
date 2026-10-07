@@ -657,6 +657,57 @@ record("C9", "rain events since December 1989", "seven; about every five years",
        "—", "reported", "events hard-coded in the code, no record deposited: verified in Arm B (JMA)")
 
 # %% [markdown]
+# ## 8. Sensitivity: measured air pressure in the borehole correction (Arm B, B-pressure)
+#
+# Pre-registered in `ANALYSIS_PLAN.md` § B-pressure. The code's constants remain as the
+# offset. Only the time-varying part of JMA Syowa hourly station pressure is removed:
+# level − (p_air − mean p_air) / (ρ_w g). The C1/C2 metrics are recomputed by functions
+# that are first checked to reproduce the primary values with zero correction.
+# Labels are assigned in `05_replication.py`.
+
+# %%
+RHO_G = 1000 * 9.81
+jma_h = pd.read_parquet(CLEAN_DIR / "jma_syowa_hourly.parquet").set_index("time").p_station_hpa
+
+
+def corrected(lv: xr.DataArray) -> xr.DataArray:
+    t = lv.time.values.astype("datetime64[ns]").astype("int64")
+    p = np.interp(t, jma_h.index.values.astype("datetime64[ns]").astype("int64"), jma_h.to_numpy())
+    anomaly_m = (p - jma_h.loc[lv.time.values.min():lv.time.values.max()].mean()) * 100 / RHO_G
+    return lv - anomaly_m
+
+
+def c1_c2_metrics(lv_map: dict) -> dict:
+    out = {}
+    for b in ["BH2201", "BH2202"]:
+        lv = lv_map[b]
+        pct = flotation_pct(lv.sel(time=slice(lv.time.values[0] + np.timedelta64(6, "h"), None)))
+        out[f"c1_min_{b}"], out[f"c1_max_{b}"] = float(pct.min()), float(pct.max())
+    v = lv_map["BH2201"]
+    pre_ = v.sel(time=slice(v.time.values[0] + np.timedelta64(6, "h"), "2022-01-02T23:59"))
+    d3 = v.sel(time=slice("2022-01-03T00:00", "2022-01-03T23:59"))
+    tp, pk = d3.idxmax().values, float(d3.max())
+    hr = v.resample(time="1h").mean()
+    out.update(pre_min=float(pre_.min()), pre_max=float(pre_.max()), peak=pk, peak_time=str(tp)[:16],
+               rise=pk - float(v.sel(time="2022-01-03T00:00", method="nearest")),
+               drop_1h=pk - float(v.sel(time=slice(tp, tp + np.timedelta64(60, "m"))).min()),
+               decline_10d=float(hr.sel(time=tp + np.timedelta64(1, "h"), method="nearest"))
+               - float(hr.sel(time=tp + np.timedelta64(10, "D"), method="nearest")))
+    return out
+
+
+base = c1_c2_metrics(level)
+assert np.isclose(base["peak"], peak) and np.isclose(base["rise"], peak - at_midnight)
+assert np.isclose(base["drop_1h"], drop_1h) and np.isclose(base["decline_10d"], decline_10d)
+assert np.isclose(min(base["c1_min_BH2201"], base["c1_min_BH2202"]), lo)
+sens_p = c1_c2_metrics({b: corrected(level[b]) for b in ["BH2201", "BH2202"]})
+corr_range = {b: (lambda d: (float(d.min()), float(d.max())))(level[b] - corrected(level[b])) for b in level}
+pd.DataFrame([{"metric": k, "code_constants": base[k], "jma_corrected": sens_p[k]} for k in base]).to_csv(
+    RESULTS_DIR / "pressure_sensitivity.csv", index=False)
+print("air-pressure correction range (m):", {b: tuple(round(x, 2) for x in v) for b, v in corr_range.items()})
+print(pd.read_csv(RESULTS_DIR / "pressure_sensitivity.csv").to_string(index=False))
+
+# %% [markdown]
 # ## Persist results
 
 # %%

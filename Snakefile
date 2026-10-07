@@ -42,6 +42,7 @@ rule data_clean:
         expand(f"{DATA}/clean/{{name}}.nc", name=["gnss_GNSS1", "gnss_GNSS2", "pressure_BH2201",
                "pressure_BH2202", "pressure_BH2203", "tide", "aws", "syowa_temperature"]),
         f"{DATA}/clean/jma_syowa_daily.parquet",
+        f"{DATA}/clean/jma_syowa_hourly.parquet",
     log:
         f"{RESULTS}/logs/02_data_clean.log",
     shell:
@@ -58,6 +59,7 @@ rule analysis:
         f"{RESULTS}/sensitivity_c3.csv",
         f"{RESULTS}/water_levels.nc",
         f"{RESULTS}/gnss_tracks.nc",
+        f"{RESULTS}/pressure_sensitivity.csv",
     log:
         f"{RESULTS}/logs/03_analysis.log",
     shell:
@@ -83,6 +85,7 @@ rule figures:
 rule replication:
     input:
         f"{DATA}/clean/jma_syowa_daily.parquet",
+        f"{RESULTS}/pressure_sensitivity.csv",
     output:
         f"{RESULTS}/arm_b_table.csv",
         f"{RESULTS}/jma_rain_events.csv",

@@ -268,3 +268,25 @@ n_months = jma.date.dt.to_period("M").nunique()
 print(f"JMA: {len(jma)} days in {n_months} months, {jma.date.min().date()} to {jma.date.max().date()}; "
       f"days with a summary: {int(((jma.summary_day != '') | (jma.summary_night != '')).sum())}")
 jma.to_parquet(CLEAN_DIR / "jma_syowa_daily.parquet", index=False)
+
+# %% [markdown]
+# ## JMA Syowa hourly station pressure (Arm B)
+#
+# Hours 1–24 are Syowa local time (UTC+3); hour 24 is midnight at the end of the day.
+# Stored in UTC.
+
+# %%
+hourly = []
+for path in sorted(Path("../data/raw/jma_hourly").glob("syowa_hourly_*.html")):
+    day = pd.Timestamp(path.stem[-8:])
+    for row in ROW.findall(path.read_text(encoding="utf-8", errors="replace")):
+        cells = [html.unescape(re.sub("<[^>]+>", "", c)).strip() for c in CELL.findall(row)]
+        if len(cells) < 2 or not cells[0].isdigit():
+            continue
+        t_local = day + pd.Timedelta(hours=int(cells[0]))
+        hourly.append(dict(time=t_local - pd.Timedelta(hours=3), p_station_hpa=_num(cells[1])))
+jma_h = pd.DataFrame(hourly).sort_values("time").drop_duplicates("time").reset_index(drop=True)
+print(f"JMA hourly: {len(jma_h)} hours, {jma_h.time.min()} to {jma_h.time.max()} UTC, "
+      f"pressure {jma_h.p_station_hpa.min():.1f}–{jma_h.p_station_hpa.max():.1f} hPa, "
+      f"missing {int(jma_h.p_station_hpa.isna().sum())}")
+jma_h.to_parquet(CLEAN_DIR / "jma_syowa_hourly.parquet", index=False)

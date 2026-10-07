@@ -164,6 +164,75 @@ record("B-rain", "rain events in December–January only", f"seven: {AUTHORS_SEA
            f"{a:%Y-%m-%d}" for a in ev_rain[~ev_rain.start.dt.month.isin([12, 1])].start), basis="post hoc")
 
 # %% [markdown]
+# ## B-pressure: measured air pressure in the borehole correction (C1, C2)
+#
+# Values from `03_analysis.py` § 8 (`results/pressure_sensitivity.csv`). Arm A
+# tolerances are applied to both columns; replicated if no label changes and no C2
+# value moves by more than 0.5 m.
+
+# %%
+ps = pd.read_csv(RESULTS_DIR / "pressure_sensitivity.csv").set_index("metric")
+
+
+def c1c2_labels(col: str) -> dict:
+    v = ps[col]
+    num = lambda k: float(v[k])  # noqa: E731
+    lo_, hi_ = min(num("c1_min_BH2201"), num("c1_min_BH2202")), max(num("c1_max_BH2201"), num("c1_max_BH2202"))
+    c1 = ("reproduced" if abs(round(lo_) - 93) <= 1 and abs(round(hi_) - 97) <= 1
+          else "partially reproduced" if lo_ > 90 else "not reproduced")
+    return {"C1": c1,
+            "pre-event range": abs(num("pre_min") - 29) <= 2 and abs(num("pre_max") - 33) <= 2,
+            "peak": abs(num("peak") - 51) <= 2, "rise": abs(num("rise") - 20) <= 2,
+            "drop_1h": abs(num("drop_1h") - 10) <= 3, "decline_10d": abs(num("decline_10d") - 30) <= 5}
+
+
+lab_code, lab_jma = c1c2_labels("code_constants"), c1c2_labels("jma_corrected")
+c2_keys = ["pre_min", "pre_max", "peak", "rise", "drop_1h", "decline_10d"]
+max_shift = max(abs(float(ps.loc[k, "jma_corrected"]) - float(ps.loc[k, "code_constants"])) for k in c2_keys)
+changed = [k for k in lab_code if lab_code[k] != lab_jma[k]]
+record("B-pressure", "C1/C2 with measured air pressure (JMA Syowa hourly)",
+       "corrected with hourly air pressure (Methods)",
+       f"labels changed: {changed or 'none'}; largest C2 shift {max_shift:.2f} m; peak "
+       f"{float(ps.loc['peak', 'jma_corrected']):.1f} m at {ps.loc['peak_time', 'jma_corrected']}",
+       "no label change and shifts ≤ 0.5 m",
+       "replicated" if not changed and max_shift <= 0.5 else "partially replicated",
+       "the code's constants act as sensor offsets; only the air-pressure anomaly is applied")
+
+# %% [markdown]
+# ## B-AR: atmospheric-river days at Syowa (reviewer question, context)
+#
+# Favier (2025), doi:10.5281/zenodo.17165410. Each listed date is already an AR day
+# under the catalogue's own ±1-day rule. Documented span: 1980 to March 2022.
+
+# %%
+ar = pd.to_datetime(pd.read_csv(Path("../data/raw/favier2025_Syowa_ARday.csv"), header=None)[0])
+ar = ar[ar <= "2022-03-31"]
+ar_set = set(ar.dt.normalize())
+for name, (a, b) in {"Period I": ("2021-12-21", "2021-12-25"), "Period II": ("2022-01-02", "2022-01-06")}.items():
+    hits = [d.strftime("%d %b") for d in pd.date_range(a, b) if d in ar_set]
+    record("B-AR", f"AR days in {name}", "not attributed in the paper (Reviewer 1: 'consistent with an AR')",
+           ", ".join(hits) if hits else "none", "—", "reported")
+
+dj_ar = pd.Series([d for d in ar if d.month in (12, 1)])
+dj_season = np.where(dj_ar.dt.month == 12, dj_ar.dt.year + 1, dj_ar.dt.year)
+per_season = pd.Series(0, index=range(1981, 2023))
+per_season.update(pd.Series(dj_season).value_counts())
+n22 = int(per_season.loc[2022])
+pct = 100 * float((per_season < n22).mean() + 0.5 * (per_season == n22).mean())
+record("B-AR", "December–January AR days, 2021/22 vs 1980/81–2021/22", "2021/22 'not unusual' (Syowa station data)",
+       f"{n22} days; percentile {pct:.0f} (median {per_season.median():.0f}, max {per_season.max()})", "—", "reported")
+
+rain_in_span = ev_rain[ev_rain.start <= "2022-03-31"]
+def near_ar(row, pad: int) -> bool:
+    return any(d in ar_set for d in pd.date_range(row.start - pd.Timedelta(days=pad), row.end + pd.Timedelta(days=pad)))
+k1 = sum(near_ar(r, 1) for r in rain_in_span.itertuples())
+k0 = sum(near_ar(r, 0) for r in rain_in_span.itertuples())
+record("B-AR", "JMA rain events with an AR day", "—",
+       f"{k1}/{len(rain_in_span)} within ±1 day (pre-registered); {k0}/{len(rain_in_span)} on the event days "
+       "(catalogue's own ±1-day rule)", "—", "reported",
+       "events without AR: " + ", ".join(f"{r.start:%Y-%m-%d}" for r in rain_in_span.itertuples() if not near_ar(r, 0)))
+
+# %% [markdown]
 # ## Persist results
 
 # %%
