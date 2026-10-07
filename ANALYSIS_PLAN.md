@@ -197,3 +197,28 @@ The JMA record is derived from the same station observations the authors cite. I
 
 Test 4's pre-registered window (25 Dec 2017 – 1 Jan 2022) includes the first night of the January 2022 event (rain in the night of 1 Jan, local time, merged with 2 Jan). The pre-registered label stands. A post-hoc row reports the window with that event excluded, which isolates the one genuine extra rain day: 4 Feb 2018.
 - **December–January restriction (post hoc).** All of the authors' seven events fall in December or January, and both events JMA adds (2 Feb 1997, 4 Feb 2018) fall in February. SI Fig. 3 is captioned "Summer (December and January)". A post-hoc row therefore restricts the events to December–January.
+
+## B-pressure: measured air pressure in the borehole correction (C1, C2), pre-registered 2026-10-07
+
+**Why.** The paper says pressures were corrected with hourly air pressure from the on-glacier station. The code subtracts constants instead (9.2 dbar for BH2201; 0.089 MPa for the Geokon sensors), and the station's pressure record is embargoed (`GAP_SOURCES.md` C). The constants (920 and 890 hPa) are well below Syowa's typical 985 hPa. That suggests they are sensor zero readings at deployment, sensor offset included, not a mean air pressure.
+
+**Method.** Keep the code's constants for the offset and remove only the time-varying part of the air pressure:
+- level_B = level_code − (p_air(t) − mean p_air over the record) / (ρ_w g), with ρ_w = 1000 kg m⁻³ and g = 9.81 m s⁻².
+- p_air(t) is JMA Syowa hourly station pressure (`hourly_s1.php`, 31 Dec 2021 – 6 Feb 2022), converted from local time (UTC+3) to UTC and interpolated linearly to the logger times.
+- Syowa is ~25 km from the boreholes. Synoptic pressure changes are coherent over that distance.
+
+**Tests.**
+- Recompute the C1 bounds and the C2 items with level_B.
+- **Replicated** if every C1/C2 label is unchanged and no C2 value moves by more than 0.5 m. Partially replicated if any label changes.
+- Report the range of the correction in metres.
+
+## B-AR: atmospheric rivers during Periods I and II (reviewer question, context), pre-registered 2026-10-07
+
+**Why.** Reviewer 1 asked whether the events were linked to atmospheric rivers and how often similar events occur. The authors answered with Syowa station data only. The paper makes no AR attribution, so this test is context and is labelled "reported", not replicated.
+
+**Source.** Favier (2025), merged ERA5–MERRA-2 atmospheric-river catalogues at staffed Antarctic stations, doi:10.5281/zenodo.17165410 (CC BY 4.0), file for Syowa (AR days, 1980 to March 2022).
+
+**Reported.**
+1. AR days overlapping Period I (21–25 Dec 2021) and Period II (2–6 Jan 2022).
+2. The number of December–January AR days in 2021/22, and its percentile among all December–January seasons in the catalogue.
+3. The fraction of JMA rain events (B-rain, within the catalogue span) with an AR day within ±1 day.

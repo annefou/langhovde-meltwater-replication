@@ -162,7 +162,7 @@ for ax, letter in zip(axs, "abcdef"):
 fig.align_ylabels(axs)
 
 fig.savefig(FIGURES_DIR / "main_result.png", dpi=150, bbox_inches="tight")
-fig.savefig(FIGURES_DIR / "main_result.pdf", bbox_inches="tight")
+fig.savefig(FIGURES_DIR / "main_result.pdf", bbox_inches="tight", metadata={"CreationDate": None})
 plt.show()
 
 # %% [markdown]
@@ -196,5 +196,5 @@ axs[0].set_ylabel("Peak speed-up over background (%)")
 axs[0].text(0.3, 15, "paper 10–20%", fontsize=7, color=INK, va="center")
 fig.tight_layout()
 fig.savefig(FIGURES_DIR / "sensitivity_c3.png", dpi=150, bbox_inches="tight")
-fig.savefig(FIGURES_DIR / "sensitivity_c3.pdf", bbox_inches="tight")
+fig.savefig(FIGURES_DIR / "sensitivity_c3.pdf", bbox_inches="tight", metadata={"CreationDate": None})
 plt.show()
