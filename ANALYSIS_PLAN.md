@@ -108,3 +108,22 @@ These residuals are at the EPS rounding precision. h = 11 h and h = 13 h are abo
 This confirms the §1 smoother. It also establishes from the published figure itself that **Fig. 3 used 12 h smoothing**, against the Methods' "bandwidth of 1 h". The primary processing (h = 12 h) was already set in §2; no rule changes.
 
 **Noted for step 4.** `fig3.m` shades Period I as 22–27 Dec (`tmin+3 … +8`) and Period II as 2–7 Jan (`tmin+14 … +19`). The plan's windows come from the paper text: 21–25 Dec and 2–6 Jan. Both will be reported.
+
+### 2026-10-07: operational details for C7 (written before computing it)
+
+- **Code reading.** `fig_s4.m` computes r only for BH2203 against tide:
+  - window 25 Jan – 6 Feb, 15-min grid, linear interpolation, no filtering;
+  - tide mean removed, timestamps shifted by −2.5 h;
+  - the "with lag" r adds one more 15-min step (total −2.75 h).
+
+  We reproduce exactly that and compare it with r = 0.965 / 0.970 (pre-registered ±0.02).
+- **BH2201/BH2202 (pre-registered rule).** Period III, from 14 Jan to the end of each record, on the same 15-min grid. Water level minus a centred 25 h running mean, against the tide as in the code (mean removed, −2.5 h).
+  - **Amplitude** = half the daily range (max − min) of the filtered level, median over days with complete data.
+  - **Amplitude ratio** = OLS slope of filtered level on tide.
+- **Code window (reported, not labelled).** BH2201/BH2202 against tide over 13–25 Jan, as plotted in SI Fig. 4b–c, with no correlation in the code. Computed the same way as the code's BH2203 r.
+- **Lag scan and clock check.** r of each borehole against the raw tide timestamps for shifts of −6 h to +6 h in 0.25 h steps. If the tide file is Syowa local time (UTC+3), the best shift for BH2203 should be close to −3 h, minus any small physical lag.
+
+### 2026-10-07: C7 post-hoc readings (written AFTER seeing the C7 results)
+
+- **Windows.** Pre-registered labels stand. Over 14 Jan to the end of each record, BH2201 and BH2202 show no correlation with the tide: r = 0.09 and −0.17. The phases the paper describes separately dominate that window (BH2202's rise on 22 Jan; BH2201's oscillations from 29 Jan). The same paper-text windows already defined for C1 (BH2201 to 28 Jan, BH2202 to 21 Jan) are reused, not new ones.
+- **Clock check.** The IOC Sea Level Station Monitoring Facility mirror of the Syowa gauge (station `syow`, UTC) was added to `01_data_download.py` to measure the deposit tide file's clock offset.

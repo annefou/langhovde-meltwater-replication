@@ -12,3 +12,12 @@ C2,overall,pre-registered,"rise to 51 m on 3 Jan, then decline",4/5 items within
 C8,head difference BH2201 − BH2203,pre-registered,9–44 m,7.6–122.9 m,bounds ±2 m,partially reproduced,hourly means 11.2–121.9 m
 C8,hydraulic gradient,pre-registered,0.9–4.4 × 10⁻² (1 km),0.8–12.3 × 10⁻² (1 km); 0.5–8.2 × 10⁻² (1.5 km),follows from the head difference,reported,Kondo et al. 2025 give 1.5 km to the grounding line (GAP_SOURCES.md D)
 C8,"head difference, before BH2201 exceeds flotation",post hoc,9–44 m,7.6–58.4 m,bounds ±2 m,partially reproduced,window ends 2022-02-04T08:45 UTC
+C7,"r, BH2203 vs tide (code method)",pre-registered,0.965,0.965,±0.02,reproduced,
+C7,"r, BH2203 vs tide with extra 0.25 h lag (code method)",pre-registered,0.970,0.970,±0.02,reproduced,
+C7,"BH2201 filtered level vs tide, 14 Jan to end",pre-registered,correlated; amplitude < 1 m,r = 0.09; amplitude 0.71 m; ratio 0.42 m/m,r ≥ 0.5 and amplitude < 1 m,not reproduced,best shift on raw tide -5.00 h (r = 0.16)
+C7,"BH2202 filtered level vs tide, 14 Jan to end",pre-registered,correlated; amplitude < 1 m,r = -0.17; amplitude 2.18 m; ratio -1.34 m/m,r ≥ 0.5 and amplitude < 1 m,not reproduced,best shift on raw tide +3.50 h (r = 0.06)
+C7,"BH2201 filtered level vs tide, 14 Jan to 01-28",post hoc,correlated; amplitude < 1 m,r = 0.70; amplitude 0.63 m; ratio 0.92 m/m,r ≥ 0.5 and amplitude < 1 m,reproduced,best shift on raw tide -2.75 h (r = 0.71)
+C7,"BH2202 filtered level vs tide, 14 Jan to 01-21",post hoc,correlated; amplitude < 1 m,r = 0.91; amplitude 0.66 m; ratio 0.87 m/m,r ≥ 0.5 and amplitude < 1 m,reproduced,best shift on raw tide -2.75 h (r = 0.92)
+C7,clock of the deposit tide file,post hoc,not stated (code shifts −2.5 h),"UTC+3.00 h (r = 0.99993, residual sd 0.28 cm vs IOC syow); borehole lag after gauge: BH2203 +15 min (range 6 to 20); BH2201 +15 min (range 15 to 21); BH2202 +15 min (range 0 to 16)",—,reported,"the best-fitting shift is 2.75 h (the code's 2.5 h plus the SI's 0.25 h) = the 3 h offset minus a real lag of ~15 min (1-min scan: 6-20 min); in UTC the boreholes respond after the Syowa gauge, the reverse of the SI wording; the code's 2.5 h alone is 30 min short of the clock offset"
+C7,"BH2201 vs tide, 13–25 Jan (SI Fig. 4 window)",post hoc,"plotted, no r given",r = 0.50 unfiltered; 0.79 after 25 h high-pass,—,reported,the code computes no r for the grounded boreholes
+C7,"BH2202 vs tide, 13–25 Jan (SI Fig. 4 window)",post hoc,"plotted, no r given",r = 0.01 unfiltered; 0.14 after 25 h high-pass,—,reported,the code computes no r for the grounded boreholes

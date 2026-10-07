@@ -245,6 +245,149 @@ record("C8", "head difference, before BH2201 exceeds flotation", "9–44 m", f"{
        f"window ends {str(t_above)[:16]} UTC", basis="post hoc")
 
 # %% [markdown]
+# ## 5. C7: tidal signal in the boreholes
+#
+# Operational details are in `ANALYSIS_PLAN.md` § Amendments (C7). The authors
+# computed one correlation, in `fig_s4.m`:
+# - BH2203 against tide, 25 Jan – 6 Feb, on a 15-min grid;
+# - tide mean removed and timestamps shifted by −2.5 h;
+# - a further 15-min step for the "with lag" value.
+#
+# For BH2201/02 the code only plots a scatter over 13–25 Jan.
+
+# %%
+tide_ds = xr.open_dataset(CLEAN_DIR / "tide.nc")
+tide = tide_ds.tide - tide_ds.tide.mean()             # mean of the whole record, as in the code
+CODE_TIDE_SHIFT = np.timedelta64(-150, "m")
+STEP = np.timedelta64(15, "m")
+
+
+def grid(start: str, end) -> np.ndarray:
+    end = np.datetime64(end, "ns")
+    return np.arange(np.datetime64(start, "ns"), end + np.timedelta64(1, "s"), STEP)
+
+
+def on_grid(da: xr.DataArray, g: np.ndarray, shift=np.timedelta64(0, "m")) -> np.ndarray:
+    t = (da.time.values + shift).astype("datetime64[ns]").astype("int64")
+    return np.interp(g.astype("int64"), t, da.values, left=np.nan, right=np.nan)
+
+
+def corr(a: np.ndarray, b: np.ndarray) -> float:
+    m = np.isfinite(a) & np.isfinite(b)
+    return float(np.corrcoef(a[m], b[m])[0, 1])
+
+
+def highpass(v: np.ndarray, hours: float = 25.0) -> np.ndarray:
+    n = int(round(hours * 4)) + 1                       # samples in a centred 25 h window
+    return v - pd.Series(v).rolling(n, center=True, min_periods=n).mean().to_numpy()
+
+
+def lag_scan(lv: np.ndarray, g: np.ndarray) -> pd.Series:
+    shifts = np.arange(-6, 6.001, 0.25)
+    return pd.Series([corr(lv, on_grid(tide, g, np.timedelta64(int(s * 60), "m"))) for s in shifts],
+                     index=shifts, name="r")
+
+
+# --- BH2203, exactly as fig_s4.m ---
+g3 = grid("2022-01-25", "2022-02-06")
+lev3 = on_grid(level["BH2203"], g3)
+tid3 = on_grid(tide, g3, CODE_TIDE_SHIFT)
+r3 = corr(tid3, lev3)
+r3_lag = corr(tid3[1:], lev3[:-1])                      # tide2i(2:end) vs level3i(1:end-1)
+record("C7", "r, BH2203 vs tide (code method)", "0.965", f"{r3:.3f}", "±0.02",
+       "reproduced" if within(r3, 0.965, 0.02) else "not reproduced")
+record("C7", "r, BH2203 vs tide with extra 0.25 h lag (code method)", "0.970", f"{r3_lag:.3f}", "±0.02",
+       "reproduced" if within(r3_lag, 0.970, 0.02) else "not reproduced")
+scan3 = lag_scan(lev3, g3)
+print(f"BH2203 lag scan on raw tide timestamps: best shift {scan3.idxmax():+.2f} h, r = {scan3.max():.3f}")
+
+# --- BH2201, BH2202: pre-registered Period III rule ---
+c7_rows = {}
+for b in ["BH2201", "BH2202"]:
+    gb = grid("2022-01-14", level[b].time.values[-1])
+    hp = highpass(on_grid(level[b], gb))
+    tb = on_grid(tide, gb, CODE_TIDE_SHIFT)
+    r = corr(hp, tb)
+    m = np.isfinite(hp) & np.isfinite(tb)
+    ratio = float(np.polyfit(tb[m], hp[m], 1)[0])
+    daily = pd.Series(hp, index=gb).groupby(pd.Series(gb).dt.floor("D").values)
+    amp = float(np.median([0.5 * (d.max() - d.min()) for _, d in daily if d.notna().sum() == 96]))
+    scan = lag_scan(hp, gb)
+    c7_rows[b] = dict(r=r, amp=amp, ratio=ratio, best=scan.idxmax(), r_best=scan.max())
+    lab = "reproduced" if (r >= 0.5 and amp < 1) else ("partially reproduced" if r >= 0.3 else "not reproduced")
+    record("C7", f"{b} filtered level vs tide, 14 Jan to end", "correlated; amplitude < 1 m",
+           f"r = {r:.2f}; amplitude {amp:.2f} m; ratio {ratio:.2f} m/m", "r ≥ 0.5 and amplitude < 1 m", lab,
+           f"best shift on raw tide {scan.idxmax():+.2f} h (r = {scan.max():.2f})")
+
+# --- BH2201, BH2202: before the late phases the paper describes (post hoc; same windows as C1) ---
+for b, end in windows.items():
+    gb = grid("2022-01-14", end)
+    hp = highpass(on_grid(level[b], gb))
+    tb = on_grid(tide, gb, CODE_TIDE_SHIFT)
+    m = np.isfinite(hp) & np.isfinite(tb)
+    daily = pd.Series(hp, index=gb).groupby(pd.Series(gb).dt.floor("D").values)
+    amp = float(np.median([0.5 * (d.max() - d.min()) for _, d in daily if d.notna().sum() == 96]))
+    r, ratio, scan = corr(hp, tb), float(np.polyfit(tb[m], hp[m], 1)[0]), lag_scan(hp, gb)
+    lab = "reproduced" if (r >= 0.5 and amp < 1) else ("partially reproduced" if r >= 0.3 else "not reproduced")
+    record("C7", f"{b} filtered level vs tide, 14 Jan to {end[5:10]}", "correlated; amplitude < 1 m",
+           f"r = {r:.2f}; amplitude {amp:.2f} m; ratio {ratio:.2f} m/m", "r ≥ 0.5 and amplitude < 1 m", lab,
+           f"best shift on raw tide {scan.idxmax():+.2f} h (r = {scan.max():.2f})", basis="post hoc")
+
+# %% [markdown]
+# ### Clock of the tide file
+#
+# The code shifts the tide by −2.5 h ("2.5 hours lag!"), and every borehole fits best
+# at −2.75 h. The IOC mirror of the same gauge has UTC timestamps
+# (`01_data_download.py`). Matching the two measures the file's clock offset directly.
+
+# %%
+import json  # noqa: E402
+
+ioc = pd.DataFrame(json.loads(Path("../data/raw/ioc_syow_20220125_20220128.json").read_text()))
+ioc = ioc[(ioc.sensor == "prs") & (ioc.slevel < 20)]          # drop the 100 m fill values
+s_ioc = pd.Series(ioc.slevel.to_numpy(), pd.to_datetime(ioc.stime)).sort_index()
+s_ioc = s_ioc["2022-01-25 06:00":"2022-01-27 18:00"]
+dep = tide_ds.tide.to_series()
+offsets = np.arange(-300, 301)                                # minutes
+r_off = [np.corrcoef(s_ioc.to_numpy(),
+                     np.interp((s_ioc.index + pd.Timedelta(minutes=int(m))).asi8, dep.index.asi8, dep.to_numpy()))[0, 1]
+         for m in offsets]
+best_off = int(offsets[int(np.argmax(r_off))])
+resid = np.interp((s_ioc.index + pd.Timedelta(minutes=best_off)).asi8, dep.index.asi8, dep.to_numpy()) - s_ioc.to_numpy()
+# Physical lag at 1-min resolution, once the clock offset is known.
+lag_rows = []
+for name, lv, g, hp in [("BH2203", lev3, g3, False),
+                        ("BH2201", on_grid(level["BH2201"], grid("2022-01-14", "2022-01-28T23:45")),
+                         grid("2022-01-14", "2022-01-28T23:45"), True),
+                        ("BH2202", on_grid(level["BH2202"], grid("2022-01-14", "2022-01-21T23:45")),
+                         grid("2022-01-14", "2022-01-21T23:45"), True)]:
+    v = highpass(lv) if hp else lv
+    mins = np.arange(-240, -119)
+    rr = np.array([corr(v, on_grid(tide, g, np.timedelta64(int(m), "m"))) for m in mins])
+    near = mins[rr >= rr.max() - 0.001]
+    # tide sample at file time T is matched to the borehole at T + shift; file time = UTC + best_off
+    lag_rows.append(f"{name} {best_off + mins[int(np.argmax(rr))]:+d} min (range {best_off + near.min()}"
+                    f" to {best_off + near.max()})")
+print("lag after the gauge, UTC:", "; ".join(lag_rows))
+
+record("C7", "clock of the deposit tide file", "not stated (code shifts −2.5 h)",
+       f"UTC{best_off / 60:+.2f} h (r = {max(r_off):.5f}, residual sd {resid.std() * 100:.2f} cm vs IOC syow); "
+       f"borehole lag after gauge: {'; '.join(lag_rows)}",
+       "—", "reported",
+       "the best-fitting shift is 2.75 h (the code's 2.5 h plus the SI's 0.25 h) = the 3 h offset minus a real "
+       "lag of ~15 min (1-min scan below); in UTC the boreholes respond after the Syowa gauge, the reverse of "
+       "the SI wording; the code's 2.5 h alone is 30 min short of the clock offset", basis="post hoc")
+
+# --- BH2201, BH2202: the code's plotted window (13–25 Jan), computed like BH2203 ---
+g1 = grid("2022-01-13", "2022-01-25")
+for b in ["BH2201", "BH2202"]:
+    rb = corr(on_grid(tide, g1, CODE_TIDE_SHIFT), on_grid(level[b], g1))
+    rb_hp = corr(on_grid(tide, g1, CODE_TIDE_SHIFT), highpass(on_grid(level[b], g1)))
+    record("C7", f"{b} vs tide, 13–25 Jan (SI Fig. 4 window)", "plotted, no r given",
+           f"r = {rb:.2f} unfiltered; {rb_hp:.2f} after 25 h high-pass", "—", "reported",
+           "the code computes no r for the grounded boreholes", basis="post hoc")
+
+# %% [markdown]
 # ## Persist results
 
 # %%

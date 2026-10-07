@@ -145,6 +145,33 @@ if problems:
     raise RuntimeError("Deposit verification failed:\n" + "\n".join(problems))
 
 # %% [markdown]
+# ## Syowa tide gauge in UTC (IOC), for the clock check
+#
+# The deposit's tide file has no time zone. The same gauge (JCG Hydrographic and
+# Oceanographic Department, Nisi-no-ura Cove) is mirrored by the IOC Sea Level Station
+# Monitoring Facility (station `syow`) with UTC timestamps. Three days are enough to
+# measure the offset in `03_analysis.py`. The data are real time and not quality
+# controlled (fill value 100 m), so we use them only to check the clock.
+
+# %%
+IOC_URL = ("https://www.ioc-sealevelmonitoring.org/service.php?query=data&code=syow"
+           "&timestart=2022-01-25&timestop=2022-01-28&format=json")
+IOC_PATH = RAW_DIR / "ioc_syow_20220125_20220128.json"
+if not IOC_PATH.exists():
+    r = requests.get(IOC_URL, timeout=120)
+    r.raise_for_status()
+    IOC_PATH.write_bytes(r.content)
+SOURCES.append({
+    "name": "IOC Sea Level Station Monitoring Facility, Syowa (syow), 2022-01-25 to 2022-01-28, UTC",
+    "doi": None,
+    "url": IOC_URL,
+    "license": "IOC SLSMF terms of use (real-time, non-quality-controlled)",
+    "accessed_on": "2026-10-07",
+    "sha256": sha256(IOC_PATH),
+})
+print(f"{IOC_PATH.name}: {len(json.loads(IOC_PATH.read_text()))} records")
+
+# %% [markdown]
 # ## Source log
 
 # %%
