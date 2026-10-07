@@ -172,6 +172,43 @@ SOURCES.append({
 print(f"{IOC_PATH.name}: {len(json.loads(IOC_PATH.read_text()))} records")
 
 # %% [markdown]
+# ## JMA Syowa daily weather summaries, December 1989 – March 2026 (Arm B)
+#
+# Japan Meteorological Agency past weather data for Syowa (station 89532), one HTML page
+# per month. The daytime and night-time weather summaries (天気概況) are the only rain
+# record at Syowa, which has no precipitation gauge. Pages are cached, so only missing
+# months are fetched (one request per second). The licence is the JMA website terms
+# (Public Data Terms of Use v1.0, attribution required).
+
+# %%
+import time  # noqa: E402
+
+JMA_DIR = RAW_DIR / "jma"
+JMA_DIR.mkdir(exist_ok=True)
+JMA_URL = ("https://www.data.jma.go.jp/stats/etrn/view/daily_s1.php"
+           "?prec_no=99&block_no=89532&year={y}&month={m}&day=&view=")
+months = [(y, m) for y in range(1989, 2027) for m in range(1, 13) if (y, m) >= (1989, 12) and (y, m) <= (2026, 3)]
+fetched = 0
+for y, m in months:
+    path = JMA_DIR / f"syowa_daily_{y}{m:02d}.html"
+    if path.exists():
+        continue
+    r = requests.get(JMA_URL.format(y=y, m=m), timeout=60)
+    r.raise_for_status()
+    path.write_bytes(r.content)
+    fetched += 1
+    time.sleep(1)
+SOURCES.append({
+    "name": "JMA past weather data, Syowa (89532), daily values incl. weather summaries, 1989-12 to 2026-03",
+    "doi": None,
+    "url": JMA_URL.format(y="YYYY", m="M"),
+    "license": "JMA website terms (Public Data Terms of Use v1.0, attribution)",
+    "accessed_on": "2026-10-07",
+    "sha256": None,  # one file per month; see data/raw/jma/
+})
+print(f"JMA: {len(months)} months, {fetched} fetched now, {len(list(JMA_DIR.glob('*.html')))} cached")
+
+# %% [markdown]
 # ## Source log
 
 # %%

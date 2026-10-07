@@ -192,3 +192,8 @@ Each Arm B test is pre-registered here before its data are downloaded in full. L
 4. **"The last recorded rain at Syowa Station was in December 2017"** before 2 January 2022: no rain day between 25 Dec 2017 and 1 Jan 2022.
 
 The JMA record is derived from the same station observations the authors cite. It is independent of the authors' extraction, not of the observing system.
+
+### 2026-10-07: B-rain post-hoc reading (written AFTER seeing the results)
+
+Test 4's pre-registered window (25 Dec 2017 – 1 Jan 2022) includes the first night of the January 2022 event (rain in the night of 1 Jan, local time, merged with 2 Jan). The pre-registered label stands. A post-hoc row reports the window with that event excluded, which isolates the one genuine extra rain day: 4 Feb 2018.
+- **December–January restriction (post hoc).** All of the authors' seven events fall in December or January, and both events JMA adds (2 Feb 1997, 4 Feb 2018) fall in February. SI Fig. 3 is captioned "Summer (December and January)". A post-hoc row therefore restricts the events to December–January.

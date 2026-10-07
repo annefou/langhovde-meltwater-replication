@@ -21,6 +21,7 @@ rule all:
         f"{FIGURES}/main_result.png",
         f"{FIGURES}/sensitivity_c3.png",
         f"{RESULTS}/claims_table.csv",
+        f"{RESULTS}/arm_b_table.csv",
 
 
 # ---------- 01: Data download (Mendeley deposit, checksums verified; IOC tide in UTC) ----------
@@ -40,6 +41,7 @@ rule data_clean:
     output:
         expand(f"{DATA}/clean/{{name}}.nc", name=["gnss_GNSS1", "gnss_GNSS2", "pressure_BH2201",
                "pressure_BH2202", "pressure_BH2203", "tide", "aws", "syowa_temperature"]),
+        f"{DATA}/clean/jma_syowa_daily.parquet",
     log:
         f"{RESULTS}/logs/02_data_clean.log",
     shell:
@@ -75,3 +77,16 @@ rule figures:
         f"{RESULTS}/logs/04_figures.log",
     shell:
         execute("04_figures.py")
+
+
+# ---------- 05: Replication (Arm B, independent data; ANALYSIS_PLAN.md § Arm B) ----------
+rule replication:
+    input:
+        f"{DATA}/clean/jma_syowa_daily.parquet",
+    output:
+        f"{RESULTS}/arm_b_table.csv",
+        f"{RESULTS}/jma_rain_events.csv",
+    log:
+        f"{RESULTS}/logs/05_replication.log",
+    shell:
+        execute("05_replication.py")

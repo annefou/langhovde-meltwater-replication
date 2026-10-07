@@ -229,3 +229,42 @@ syowa = xr.Dataset(
     attrs={"raw_file": "1989_2026_temperature.dat", "station": "Syowa (JMA 89532)"},
 )
 write_nc(syowa, "syowa_temperature.nc")
+
+# %% [markdown]
+# ## JMA Syowa daily weather summaries (Arm B)
+#
+# One HTML page per month (`01_data_download.py`). Each day row gives station and
+# sea-level pressure, daily mean/max/min temperature, and the weather summary for
+# daytime (06–18) and night-time (18–06 next day), in Syowa local time (UTC+3).
+# Syowa has no precipitation gauge: the precipitation columns are empty. JMA quality
+# marks (e.g. `)`, `]`) are kept in the raw text and stripped from numbers.
+
+# %%
+import html  # noqa: E402
+import re  # noqa: E402
+
+JMA_DIR = Path("../data/raw/jma")
+ROW = re.compile(r'<tr class="mtx"[^>]*>(.*?)</tr>', re.S)
+CELL = re.compile(r"<t[dh][^>]*>(.*?)</t[dh]>", re.S)
+
+
+def _num(text: str) -> float:
+    m = re.search(r"-?\d+(\.\d+)?", text)
+    return float(m.group()) if m else np.nan
+
+
+records = []
+for path in sorted(JMA_DIR.glob("syowa_daily_*.html")):
+    y, mth = int(path.stem[-6:-2]), int(path.stem[-2:])
+    for row in ROW.findall(path.read_text(encoding="utf-8", errors="replace")):
+        cells = [html.unescape(re.sub("<[^>]+>", "", c)).strip() for c in CELL.findall(row)]
+        if len(cells) != 21 or not cells[0].isdigit():
+            continue
+        records.append(dict(date=pd.Timestamp(y, mth, int(cells[0])), p_station_hpa=_num(cells[1]),
+                            t_mean=_num(cells[6]), t_max=_num(cells[7]), t_min=_num(cells[8]),
+                            summary_day=cells[19], summary_night=cells[20]))
+jma = pd.DataFrame(records).sort_values("date").reset_index(drop=True)
+n_months = jma.date.dt.to_period("M").nunique()
+print(f"JMA: {len(jma)} days in {n_months} months, {jma.date.min().date()} to {jma.date.max().date()}; "
+      f"days with a summary: {int(((jma.summary_day != '') | (jma.summary_night != '')).sum())}")
+jma.to_parquet(CLEAN_DIR / "jma_syowa_daily.parquet", index=False)
