@@ -3,7 +3,7 @@
   "@type": "SoftwareSourceCode",
   "name": "langhovde-meltwater-replication",
   "description": "FORRT reproduction and partial independent-data replication of Sugiyama et al. (2026, Nature Communications): meltwater-driven acceleration of grounded ice at Langhovde Glacier, East Antarctica.",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "dateCreated": "2026-10-06",
   "dateModified": "2026-10-07",
   "license": "https://spdx.org/licenses/MIT",
@@ -98,5 +98,6 @@
     "pystac-client",
     "jupytext",
     "snakemake"
-  ]
+  ],
+  "datePublished": "2026-10-07"
 }
