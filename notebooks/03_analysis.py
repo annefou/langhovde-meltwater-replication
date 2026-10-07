@@ -388,6 +388,221 @@ for b in ["BH2201", "BH2202"]:
            "the code computes no r for the grounded boreholes", basis="post hoc")
 
 # %% [markdown]
+# ## 6. GNSS speed and uplift: C3, C4, C6
+#
+# Processing with `gnss.py` (reconstructed `local_regression`, validated against the
+# published `fig3.eps` by `tests/test_gnss.py`). Operational details are in
+# `ANALYSIS_PLAN.md` § Amendments (C3, C4, C6).
+
+# %%
+from gnss import AUTHORS_FIG3, GnssSettings, fill_gaps_spline, process_track  # noqa: E402
+
+BANDWIDTHS = [1, 3, 6, 12]
+STATIONS = ["GNSS1", "GNSS2"]
+WINDOWS = {
+    "paper": {"I": ("2021-12-21T00:00", "2021-12-25T23:59"), "II": ("2022-01-02T00:00", "2022-01-06T23:59")},
+    "code": {"I": ("2021-12-22T00:00", "2021-12-27T00:00"), "II": ("2022-01-02T00:00", "2022-01-07T00:00")},
+}
+DAY = pd.Timedelta("1D")
+
+tracks, filled = {}, {}
+for st in STATIONS:
+    g = xr.open_dataset(CLEAN_DIR / f"gnss_{st}.nc")
+    for h in BANDWIDTHS:
+        settings = AUTHORS_FIG3[st] if h == 12 else GnssSettings(bandwidth_h=h)
+        tracks[st, h] = process_track(g.time.values, g.lat.values, g.lon.values, g.z.values, settings, st)
+        filled[st, h] = fill_gaps_spline(tracks[st, h])
+print("processed", len(tracks), "tracks")
+
+
+def series(ds: xr.Dataset, var: str = "speed") -> pd.Series:
+    return ds[var].to_series().dropna()
+
+
+def in_window(sr: pd.Series, win: tuple[str, str]) -> pd.Series:
+    return sr[(sr.index >= pd.Timestamp(win[0])) & (sr.index <= pd.Timestamp(win[1]))]
+
+
+def masked(sr: pd.Series, wins: dict) -> pd.Series:
+    keep = np.ones(len(sr), bool)
+    for a, b in wins.values():
+        keep &= ~((sr.index >= pd.Timestamp(a)) & (sr.index <= pd.Timestamp(b)))
+    return sr[keep]
+
+
+def baseline_values(obs: pd.Series, wins: dict, period: str, t_peak: pd.Timestamp) -> dict[str, float]:
+    m = masked(obs, wins)
+    a, b = pd.Timestamp(wins[period][0]), pd.Timestamp(wins[period][1])
+    b1 = m[((m.index >= a - 3 * DAY) & (m.index < a)) | ((m.index > b) & (m.index <= b + 3 * DAY))]
+    tn = (m.index - m.index[0]) / DAY
+    slope, icpt = np.polyfit(tn, m.to_numpy(), 1)
+    near = m[(m.index >= t_peak - 3.5 * DAY) & (m.index <= t_peak + 3.5 * DAY)]
+    return {"B1": float(b1.median()) if len(b1) else np.nan,
+            "B2": float(m.median()),
+            "B3": float(icpt + slope * (t_peak - m.index[0]) / DAY),
+            "B4": float(near.median()) if len(near) >= 24 else np.nan}
+
+
+rows = []
+for st in STATIONS:
+    for h in BANDWIDTHS:
+        obs = series(tracks[st, h])
+        for gap, sr in [("observed", obs), ("spline", series(filled[st, h]))]:
+            for wname, wins in WINDOWS.items():
+                for period, win in wins.items():
+                    w = in_window(sr, win)
+                    row = dict(station=st, h_hours=h, gap=gap, windows=wname, period=period,
+                               n_hours=len(w), first=str(w.index.min())[:16] if len(w) else "",
+                               peak_time=pd.NaT, peak_speed=np.nan)
+                    if len(w):
+                        row.update(peak_time=w.idxmax(), peak_speed=float(w.max()))
+                        for k, v in baseline_values(obs, wins, period, w.idxmax()).items():
+                            row[k] = v
+                            row[f"speedup_{k}"] = 100 * (row["peak_speed"] / v - 1)
+                    rows.append(row)
+sens = pd.DataFrame(rows)
+sens.to_csv(RESULTS_DIR / "sensitivity_c3.csv", index=False)
+
+prim = sens.query("h_hours == 12 and windows == 'paper'").set_index(["gap", "station", "period"])
+print(prim[["first", "n_hours", "peak_time", "peak_speed", "B1", "speedup_B1", "speedup_B2",
+            "speedup_B3", "speedup_B4"]].round(3).to_string())
+
+# %% [markdown]
+# ### C3 labels
+
+# %%
+def in_range(v: float) -> bool:
+    return bool(np.isfinite(v) and 7 <= v <= 23)
+
+
+cells = [(st, p) for st in STATIONS for p in ["I", "II"]]
+obs12 = {c: prim.loc[("observed", *c)] for c in cells}
+spl12 = {c: prim.loc[("spline", *c)] for c in cells}
+for (st, p), r in obs12.items():
+    note = "no observed data in window" if r.n_hours == 0 else f"first hour in window {r['first']}"
+    record("C3", f"speed-up {st} Period {p} (h = 12 h, B1, observed)",
+           "~20% (Period I GNSS2); 10–20% overall",
+           "no data" if r.n_hours == 0 else f"{r.speedup_B1:.1f}% (peak {r.peak_speed:.3f} m/d at "
+           f"{str(r.peak_time)[:16]}; B1 {r.B1:.3f} m/d)", "7–23%",
+           "no data" if r.n_hours == 0 else ("within range" if in_range(r.speedup_B1) else "outside range"), note)
+
+with_data = [c for c in cells if obs12[c].n_hours > 0]
+primary_ok = all(in_range(obs12[c].speedup_B1) for c in with_data)
+any_ok = any(in_range(v) for v in sens.query("h_hours == 12 and windows == 'paper'")
+             .filter(like="speedup_").to_numpy().ravel())
+spline_ok = all(in_range(spl12[c].speedup_B1) for c in cells)
+if primary_ok and len(with_data) == len(cells):
+    c3_label = "reproduced"
+elif primary_ok or spline_ok or any_ok:
+    c3_label = "partially reproduced"
+else:
+    c3_label = "not reproduced"
+record("C3", "overall (h = 12 h, B1, paper windows)", "10–20%",
+       f"{sum(in_range(obs12[c].speedup_B1) for c in with_data)}/{len(with_data)} cells with data in range "
+       f"(observed); {sum(in_range(spl12[c].speedup_B1) for c in cells)}/4 (spline)",
+       "all four cells 7–23%", c3_label,
+       f"cells without observed data: {[f'{s} {p}' for s, p in cells if obs12[(s, p)].n_hours == 0] or 'none'}")
+
+# %% [markdown]
+# ### C3 robustness: bandwidth × baseline, and signal vs noise
+
+# %%
+rob = []
+for h in BANDWIDTHS:
+    for k in ["B1", "B2", "B3", "B4"]:
+        for gap in ["observed", "spline"]:
+            sub = sens.query("h_hours == @h and windows == 'paper' and gap == @gap")
+            rob.append(dict(h_hours=h, baseline=k, gap=gap, cells_in_range=int(sum(in_range(v) for v in sub[f"speedup_{k}"])),
+                            cells_with_data=int((sub.n_hours > 0).sum())))
+rob = pd.DataFrame(rob)
+print(rob.pivot_table(index=["h_hours"], columns=["gap", "baseline"], values="cells_in_range").to_string())
+n_all4 = int(((rob.gap == "observed") & (rob.cells_in_range == rob.cells_with_data)).sum())
+record("C3", "robustness: bandwidth × baseline combinations with all cells in range (observed)", "—",
+       f"{n_all4}/16", "reported", "reported", "per-cell values in results/sensitivity_c3.csv")
+
+
+def b4_at(obs: pd.Series, wins: dict, t: pd.Timestamp) -> float:
+    m = masked(obs, wins)
+    near = m[(m.index >= t - 3.5 * DAY) & (m.index <= t + 3.5 * DAY)]
+    return float(near.median()) if len(near) >= 24 else np.nan
+
+
+wins = WINDOWS["paper"]
+for st in STATIONS:
+    for h in [12, 1]:
+        obs = series(tracks[st, h])
+        quiet = masked(obs, wins)
+        anom = np.array([v / b4_at(obs, wins, t) - 1 for t, v in quiet.items()])
+        p95 = 100 * np.nanpercentile(anom, 95)
+        peaks = []
+        for p in ["I", "II"]:
+            w = in_window(obs, wins[p])
+            peaks.append(f"P{p} {100 * (w.max() / b4_at(obs, wins, w.idxmax()) - 1):.1f}%" if len(w) else f"P{p} no data")
+        record("C3", f"signal vs noise {st} (h = {h} h)", "error 7–12%",
+               f"event peak anomaly {', '.join(peaks)}; 95th percentile outside events {p95:.1f}%",
+               "reported", "reported", "anomaly = speed / B4 − 1")
+
+# %% [markdown]
+# ### C4: uplift
+
+# %%
+def uplift_at(sr: pd.Series, t: str) -> float:
+    return float(sr.iloc[np.argmin(np.abs(sr.index - pd.Timestamp(t)))])
+
+
+c4 = {}
+for h in BANDWIDTHS:
+    zo, zs = series(tracks["GNSS1", h], "uplift"), series(filled["GNSS1", h], "uplift")
+    w1o, w1s = in_window(zo, WINDOWS["paper"]["I"]), in_window(zs, WINDOWS["paper"]["I"])
+    z0 = uplift_at(zo, "2021-12-21T00:00")
+    pre_gap = w1o[w1o.index < pd.Timestamp("2021-12-24")]
+    w2 = in_window(zo, ("2022-01-03T00:00", "2022-01-05T23:59"))
+    z2 = in_window(series(tracks["GNSS2", h], "uplift"), WINDOWS["paper"]["I"])
+    c4[h] = dict(obs=1000 * (w1o.max() - z0), pre_gap=1000 * (pre_gap.max() - z0), spline=1000 * (w1s.max() - z0),
+                 t_spline_max=str(w1s.idxmax())[:16], p2=1000 * (w2.max() - uplift_at(zo, "2022-01-03T00:00")),
+                 gnss2=1000 * (z2.max() - z2.min()))
+    print(h, {k: (round(v, 1) if isinstance(v, float) else v) for k, v in c4[h].items()})
+
+u = c4[12]
+ok_obs, ok_spl = within(u["obs"], 120, 20), within(u["spline"], 120, 20)
+ok_p2, ok_g2 = 0 <= u["p2"] <= 20, u["gnss2"] < 20
+c4_label = ("reproduced" if ok_obs and ok_p2 and ok_g2 else
+            "partially reproduced" if (ok_spl or ok_obs or ok_p2 or ok_g2) else "not reproduced")
+record("C4", "Period I uplift GNSS1 (h = 12 h)", "120 mm (21–25 Dec)",
+       f"observed {u['obs']:.0f} mm (before the 24 Dec gap {u['pre_gap']:.0f} mm); spline {u['spline']:.0f} mm "
+       f"(max at {u['t_spline_max']})", "±20 mm", "within tolerance" if ok_obs else
+       ("spline only" if ok_spl else "outside tolerance"))
+record("C4", "Period II uplift GNSS1 (h = 12 h)", "~10 mm (3–5 Jan)", f"{u['p2']:.0f} mm", "0–20 mm",
+       "within tolerance" if ok_p2 else "outside tolerance")
+record("C4", "GNSS2 vertical range, Period I (h = 12 h)", "no noticeable displacement",
+       f"{u['gnss2']:.0f} mm (data from 23 Dec 15:00)", "< 20 mm", "within tolerance" if ok_g2 else "outside tolerance",
+       f"h = 1 h: {c4[1]['gnss2']:.0f} mm (tidal motion of floating ice not smoothed out)")
+record("C4", "overall", "uplift ~0.1 m at GNSS1, none at GNSS2", "see items", "all items", c4_label,
+       "; ".join(f"h={h}: obs {c4[h]['obs']:.0f}, spline {c4[h]['spline']:.0f}, PII {c4[h]['p2']:.0f}, "
+                 f"GNSS2 {c4[h]['gnss2']:.0f} mm" for h in BANDWIDTHS))
+
+# %% [markdown]
+# ### C6: timing of the Period II pressure and speed peaks
+
+# %%
+t_p = pd.Timestamp(t_peak)
+dts = {}
+for st in STATIONS:
+    for h in BANDWIDTHS:
+        w = in_window(series(tracks[st, h]), WINDOWS["paper"]["II"])
+        dts[st, h] = ((w.idxmax() - t_p) / pd.Timedelta("1h"), w.idxmax())
+dt12, tmax12 = dts["GNSS1", 12]
+c6_ok = abs(dt12) <= 24
+others = [abs(dts["GNSS1", h][0]) <= 24 for h in BANDWIDTHS]
+record("C6", "GNSS1 speed peak minus BH2201 pressure peak (h = 12 h)", "broadly coincided",
+       f"{dt12:+.0f} h (speed peak {str(tmax12)[:16]}, pressure peak {str(t_p)[:16]} UTC)", "|Δt| ≤ 24 h",
+       "reproduced" if c6_ok and all(others) else ("partially reproduced" if c6_ok or any(others) else "not reproduced"),
+       "; ".join(f"{st} h={h}: {dts[st, h][0]:+.0f} h" for st in STATIONS for h in BANDWIDTHS))
+
+xr.Dataset({f"{k}_{st}_h{h}": tracks[st, h][k].rename({"time": f"time_{st}_h{h}"})
+            for st in STATIONS for h in BANDWIDTHS for k in ("speed", "uplift")}).to_netcdf(RESULTS_DIR / "gnss_tracks.nc")
+
+# %% [markdown]
 # ## Persist results
 
 # %%

@@ -16,8 +16,8 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT / "notebooks"), str(ROOT / "scripts")]
-from gnss import (AUTHORS_FIG3, GnssSettings, find_segments, latlon2utm,  # noqa: E402
-                  local_regression, process_track)
+from gnss import (AUTHORS_FIG3, GnssSettings, fill_gaps_spline, find_segments,  # noqa: E402
+                  latlon2utm, local_regression, process_track)
 
 FIG3 = ROOT / "data/raw/mendeley/Field data from Langhovde Glacier and MATLAB code/fig3"
 
@@ -107,6 +107,13 @@ def test_gap_produces_two_segments_and_no_output_inside():
     assert int(inside.sum()) == 0
 
 
+def test_spline_fill_bridges_gap_of_constant_velocity_track():
+    time, lat, lon, z = _synthetic_track(0.25, days=6, gap=(2.0, 3.5))
+    filled = fill_gaps_spline(process_track(time, lat, lon, z, GnssSettings(bandwidth_h=6)))
+    np.testing.assert_allclose(filled.speed.dropna("time"), 0.25, rtol=1e-6)
+    assert (~filled.observed).sum() > 0 and filled.observed.sum() > 0
+
+
 # ---------- regression test against the authors' published figure ----------
 
 @pytest.fixture(scope="module")
@@ -140,3 +147,17 @@ def test_generic_pipeline_reproduces_published_fig3(deposit):
             m = (ds.segment.values == seg) & np.isfinite(ds.speed.values)
             rms = np.sqrt(np.mean((np.interp(et, t_ours[m], ds.speed.values[m]) - ev) ** 2))
             assert rms < 2e-4, f"{station} curve {i}: rms {rms:.2e} m/d"
+
+
+def test_spline_fill_reproduces_published_dashed_curves(deposit):
+    from eps_curves import read_polylines
+    polys = read_polylines(deposit / "fig3.eps")
+    filled = fill_gaps_spline(process_track(*_load(deposit / "LG05.dat"), AUTHORS_FIG3["GNSS1"], "GNSS1"))
+    t = (filled.time.values - np.datetime64("2021-12-19")) / np.timedelta64(1, "D")
+    m = np.isfinite(filled.speed.values)
+    xy = polys[31].xy                                    # dashed blue: spline speed
+    et, ev = (xy[:, 0] - 198) / 496 * 50, 0.15 + (912 - xy[:, 1]) / 211 * 0.2
+    assert np.sqrt(np.mean((np.interp(et, t[m], filled.speed.values[m]) - ev) ** 2)) < 3e-4
+    xy = polys[38].xy                                    # dashed red: spline uplift, offset +0.08 m
+    et, ez = (xy[:, 0] - 198) / 496 * 50, (912 - xy[:, 1]) / 211 * 0.6 - 0.08
+    assert np.sqrt(np.mean((np.interp(et, t, filled.uplift.values) - ez) ** 2)) < 5e-4

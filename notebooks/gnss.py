@@ -145,3 +145,36 @@ def process_track(time: np.ndarray, lat: np.ndarray, lon: np.ndarray, height: np
                 "step_h": settings.step_h, "difference_scheme": settings.scheme,
                 "smoother": "Gaussian-kernel local linear regression (sigma = bandwidth_h)"}
     return ds
+
+
+def fill_gaps_spline(track: xr.Dataset, scheme: Literal["centred", "forward"] = "centred") -> xr.Dataset:
+    """Continuous track through data gaps, as in `fig_s6.m` (SI Fig. 6, dashed lines in Fig. 3).
+
+    A not-a-knot cubic spline (MATLAB `spline`) is fitted through the smoothed hourly x,
+    y and uplift of all segments. It is evaluated on one regular grid from the first to
+    the last output time and then differenced. `observed` is False at grid times
+    inside a gap, i.e. outside every segment's span.
+    """
+    from scipy.interpolate import CubicSpline
+
+    t0 = track.time.values[0]
+    t = (track.time.values - t0) / _DAY
+    step = track.attrs.get("step_h", 1.0) / 24
+    ti = np.arange(t[0], t[-1] + 1e-9, step)
+    out = {k: CubicSpline(t, track[k].values, bc_type="not-a-knot")(ti) for k in ("x", "y", "uplift")}
+    u, v = _difference(ti, out["x"], scheme), _difference(ti, out["y"], scheme)
+    seg = track.segment.values
+    spans = [(t[seg == s].min(), t[seg == s].max()) for s in np.unique(seg)]
+    observed = np.zeros(ti.size, dtype=bool)
+    for a, b in spans:
+        observed |= (ti >= a - 1e-9) & (ti <= b + 1e-9)
+    ds = xr.Dataset(
+        {"x": ("time", out["x"]), "y": ("time", out["y"]), "uplift": ("time", out["uplift"]),
+         "speed": ("time", np.hypot(u, v)), "observed": ("time", observed)},
+        coords={"time": t0 + np.round(ti * 86400e9).astype("timedelta64[ns]")},
+        attrs={**track.attrs, "gap_fill": "not-a-knot cubic spline through smoothed hourly positions",
+               "difference_scheme": scheme},
+    )
+    for k in ("x", "y", "uplift", "speed"):
+        ds[k].attrs = track[k].attrs
+    return ds

@@ -127,3 +127,36 @@ This confirms the §1 smoother. It also establishes from the published figure it
 
 - **Windows.** Pre-registered labels stand. Over 14 Jan to the end of each record, BH2201 and BH2202 show no correlation with the tide: r = 0.09 and −0.17. The phases the paper describes separately dominate that window (BH2202's rise on 22 Jan; BH2201's oscillations from 29 Jan). The same paper-text windows already defined for C1 (BH2201 to 28 Jan, BH2202 to 21 Jan) are reused, not new ones.
 - **Clock check.** The IOC Sea Level Station Monitoring Facility mirror of the Syowa gauge (station `syow`, UTC) was added to `01_data_download.py` to measure the deposit tide file's clock offset.
+
+### 2026-10-07: operational details for C3, C4 and C6 (written before computing them)
+
+**Processing.**
+- `gnss.process_track`: observed-only.
+- `gnss.fill_gaps_spline`: the not-a-knot cubic spline of `fig_s6.m`, matching the published dashed curves to 0.00013 m/d and 0.2 mm.
+- Bandwidths 1, 3, 6 and 12 h. Gap threshold 12 h. Differencing as in `AUTHORS_FIG3` at h = 12 h; centred at the other bandwidths.
+
+**Windows.**
+- Paper text (primary): Period I = 21 Dec 00:00 – 25 Dec 23:59 UTC; Period II = 2 Jan 00:00 – 6 Jan 23:59.
+- Code shading (`fig3.m`), reported alongside: 22–27 Dec and 2–7 Jan.
+
+**C3, speed-up.**
+- Peak = maximum hourly speed in the window. Speed-up = 100 × (peak / baseline − 1).
+- Baselines use observed-only speeds of the same station and bandwidth, with both event windows masked:
+  - **B1:** median over the 3 days before the window start and the 3 days after the window end.
+  - **B2:** median over the whole record.
+  - **B3:** OLS line of speed against time, evaluated at the peak time.
+  - **B4:** 7-day centred running median (at least 24 hourly values), evaluated at the peak time.
+- **Primary label** (h = 12 h, B1, paper-text windows, observed-only): reproduced if all four station × period speed-ups lie in 7–23% (10–20% ± 3 percentage points).
+  - Partially reproduced if this holds only with the spline fill, or only for some baselines, stations or periods.
+  - Not reproduced if no station × period is in range under any baseline or gap handling at h = 12 h.
+  - A station × period with no observed data in its window is reported as "no data", not counted as a failure, and noted.
+- **Robustness:** for each of the 16 bandwidth × baseline combinations, the number of station × periods in range, observed-only and spline.
+- **Signal vs noise:** hourly anomaly = speed / B4 − 1. The event peak anomaly is compared with the 95th percentile of anomalies outside both event windows, per station, at h = 12 h and h = 1 h.
+
+**C4, uplift.**
+- Uplift = maximum smoothed vertical displacement in the window minus the value at the window start (Period I GNSS1: 21 Dec 00:00; Period II: 3 Jan 00:00, the paper's "3 to 5 January").
+- Observed-only Period I uses observed samples only. The part reached before the 24–25 Dec gap is reported separately.
+- GNSS2: maximum minus minimum over the part of 21–25 Dec with data (from 23 Dec 15:00).
+- Primary: h = 12 h. At h = 1 h the floating GNSS2 will also carry tidal motion; reported, not labelled.
+
+**C6, timing.** Δt = time of the GNSS1 Period II speed peak (observed-only) minus the BH2201 pressure peak (3 Jan 23:07 UTC, from C2). Reproduced if |Δt| ≤ 24 h at h = 12 h. Δt is also reported for every bandwidth and for GNSS2.
