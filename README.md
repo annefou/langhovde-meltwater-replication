@@ -14,7 +14,14 @@
 > **Acceleration of an Antarctic outlet glacier driven by surface meltwater input to the base** — replication study.
 > Reference paper: [10.1038/s41467-026-72724-x](https://doi.org/10.1038/s41467-026-72724-x)
 
-This is a self-contained replication of the headline claim of the reference paper. It produces a reproducible computational pipeline, a Zenodo-archived release with a citable DOI, and a FORRT-tagged nanopublication chain on the [Science Live platform](https://platform.sciencelive4all.org).
+This is a self-contained reproduction and partial replication of the headline claim of Sugiyama, Kondo, Minowa & Watanabe (2026, *Nature Communications* 17, 6102). It produces a reproducible computational pipeline, a Zenodo-archived release with a citable DOI, and a FORRT-tagged nanopublication chain on the [Science Live platform](https://platform.sciencelive4all.org).
+
+**Result: partially supported.**
+- The authors' deposit ([doi:10.17632/8wvtxg53ry.1](https://doi.org/10.17632/8wvtxg53ry.1)), analysed with new code, reproduces the paper's central observations for the January 2022 rain and melt event: basal water pressure at 97.1% of flotation, a speed-up of 11–13%, and uplift of the grounded ice.
+- Independent data (JMA, ERA5, satellite melt flags, Sentinel-2, an atmospheric-river catalogue) support the setting.
+- The qualifications: one instrumented event; a 10–20% speed-up that holds only with the 12 h smoothing actually used, not the 1 h stated; ranges that apply only to the event; and no independent confirmation of the speed-up.
+
+All tests were pre-registered in [`ANALYSIS_PLAN.md`](ANALYSIS_PLAN.md). The results are in [`results/claims_table.csv`](results/claims_table.csv) and [`results/arm_b_table.csv`](results/arm_b_table.csv), and an overview is in [`index.md`](index.md).
 
 ---
 

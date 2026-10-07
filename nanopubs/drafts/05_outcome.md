@@ -41,6 +41,8 @@ https://doi.org/{{ZENODO_VERSION_DOI}}
 <!-- field: date -->
 ### Choose completion date (text input, required)
 
+`build-chain-draft` takes this from `date-released` in `CITATION.cff`, which the release sets, so the published date is the release date. The value below is the date the analysis was completed.
+
 ```
 2026-10-07
 ```

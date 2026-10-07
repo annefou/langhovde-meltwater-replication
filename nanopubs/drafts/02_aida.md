@@ -1,6 +1,6 @@
 # 02 — AIDA Sentence
 
-> Run the pre-flight checklist in `docs/forrt-form-fields.md` § Pre-flight checklist before drafting.
+> Fields from the live template `https://w3id.org/np/RALmXhDw3rHcMveTgbv8VtWxijUHwnSqhCmtJFIPKWVaA` (`template_fields("02_aida")`, source: live, 2026-10-07): aida (required; regex `[\S ]{5,500}\.`), topic (optional, repeatable, Wikidata), project (required; filled by the chain wizard), dataset (optional, repeatable), publication (optional, repeatable).
 
 **Form heading:** *"AIDA Sentence — Make structured scientific claims following the AIDA model"*
 
@@ -11,30 +11,28 @@
 
 Atomic, Independent, Declarative, Absolute. One empirical finding. Must end with a full stop.
 
-> _If your draft AIDA contains "and" linking two distinct findings, split into two AIDA nanopubs._
+> Restates the paper's headline claim (the quote in `01_quote.md`) as one finding, at the paper's own scope ("in Antarctica"). The Outcome then judges that scope. Alternative at site scope, if Anne prefers: "Surface meltwater that reaches the glacier bed accelerated grounded ice at Langhovde Glacier in summer 2021/22." Single finding, no hedge.
 
 ```
-
+Surface meltwater that reaches the bed of grounded Antarctic ice accelerates its flow.
 ```
 
 <!-- field: topic -->
 ### Select related topics/tags (search/select, optional)
 
-Predefined topic vocabulary — list the labels you intend to pick from the dropdown.
+Wikidata items checked with `wikidata_lookup` on 2026-10-07. The template restricts this field to concepts (Wikidata classes with P279), so place names such as Langhovde Glacier (Q6486120) and Antarctic ice sheet (Q571430) go in the Study keywords instead. Basal sliding (Q3962812) has no type statements and is rejected.
 
 ```
-
+meltwater (Q360925)
+glacier (Q35666)
+ice sheet (Q12599)
+ice-sheet dynamics (Q4290336)
 ```
 
 <!-- field: project -->
 ### Relates to this nanopublication (search/select, required)
 
-URI of the nanopub the AIDA derives from.
-
-- For paper-rooted chains: the Quote-with-comment URI (from step 01).
-- For question-rooted chains: the PICO or PCC URI (from step 01).
-
-Pull the URI from `nanopubs/PUBLISHED.md`.
+The Quote-with-comment URI from step 01; the chain wizard fills it in.
 
 ```
 
@@ -43,18 +41,12 @@ Pull the URI from `nanopubs/PUBLISHED.md`.
 <!-- field: dataset -->
 ### Supported by datasets (text input, optional)
 
-DOIs/URLs of datasets that ground the AIDA claim.
-
-- _DOI 1: ___
-- _DOI 2: ___
+- https://doi.org/10.17632/8wvtxg53ry.1
 
 <!-- field: publication -->
 ### Supported by other publications (text input, optional)
 
-DOIs/URLs of publications that support the AIDA claim — e.g. peer-reviewed methods papers, or the original paper if not already cited via the Quote.
-
-- _DOI 1: ___
-- _DOI 2: ___
+*(skip — optional; the paper is already cited through the Quote, and filling both support fields has caused publishing failures, see below)*
 
 > **Known platform bug (2026-04-26):** if both *Supported by datasets* AND *Supported by other publications* are populated and publishing fails, fall back to publishing this AIDA via Nanodash. The URI namespace becomes `https://w3id.org/np/...` (still valid and citable).
 

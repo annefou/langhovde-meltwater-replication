@@ -5,6 +5,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# ERA5 (ECMWF ARCO Zarr) needs the CDS API key; see ci.yml.
+env:
+  CDSAPI_KEY: ${{ secrets.CDSAPI_KEY }}
+
 permissions:
   contents: read
   pages: write
@@ -51,10 +55,18 @@ jobs:
           cache: true
           environments: docs
 
+      - name: Cache input data
+        if: steps.guard.outputs.ready == 'true'
+        uses: actions/cache@v5
+        with:
+          path: data/raw
+          key: input-data-v1
+
+      # Numbered notebooks only: notebooks/gnss.py is an importable module, not a notebook.
       - name: Convert .py notebooks to .ipynb
         if: steps.guard.outputs.ready == 'true'
         run: |
-          for nb in notebooks/*.py; do
+          for nb in notebooks/[0-9][0-9]_*.py; do
             pixi run jupytext --to notebook "$nb"
           done
 

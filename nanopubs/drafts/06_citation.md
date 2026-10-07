@@ -1,6 +1,6 @@
 # 06 — CiTO Citation
 
-> Run the pre-flight checklist in `docs/forrt-form-fields.md` § Pre-flight checklist before drafting.
+> Fields from the live template `https://w3id.org/np/RA43F9EoOuzF0xoNUnCMNyFsfIqlsuWDdPHCnN0wCdCAw` (`template_fields("06_citation")`, source: live, 2026-10-07): work (required), cites (required, repeatable, CiTO value list), cited (required, repeatable). Relations from `vocabulary("cito_relation")`.
 
 **Description:** *"Declare citations between papers or other works, using Citation Typing Ontology"*
 
@@ -9,7 +9,7 @@
 <!-- field: work -->
 ### Identifier for the citing creative work (text input, required)
 
-URI of the Outcome published in step 05. Pull from `nanopubs/PUBLISHED.md`.
+The Outcome URI from step 05; the chain wizard fills it in.
 
 ```
 
@@ -21,20 +21,10 @@ URI of the Outcome published in step 05. Pull from `nanopubs/PUBLISHED.md`.
 
 ##### Citation Type (dropdown)
 
-Choose based on the Outcome's validation status:
-
-- Validated → `confirms`
-- PartiallySupported → `qualifies`
-- Contradicted → `disputes`
-
-For question-rooted chains where there is no original paper to confirm/dispute, use `usesMethodIn` or `citesAsAuthority` for the methodology paper(s).
-
-Write the chosen type in the block below (a vocabulary label such as `cites as authority`, or `citesAsAuthority`). `build-chain-draft` uses it as written; leave the block empty to have the type derived from the Outcome's validation status, which is right for paper-rooted chains only.
-
-> **Note:** `replicates` is NOT in the Science Live dropdown (despite existing in upstream CiTO). When citing a notebook/tutorial that was directly reused, use **`credits`** instead.
+The Outcome is PartiallySupported, so the relation is `qualifies`.
 
 ```
-
+qualifies
 ```
 
 ##### DOI or other URL of the cited work (text input)
@@ -45,11 +35,9 @@ https://doi.org/10.1038/s41467-026-72724-x
 
 #### Additional citations (optional)
 
-If the Outcome cites methods papers, related replications, or upstream tools, add them here.
-
-One line per further citation, in this exact form (each becomes a pre-filled row):
-
-- _Type: ___ → URL: ___
+- Type: uses data from → URL: https://doi.org/10.17632/8wvtxg53ry.1
+- Type: uses data from → URL: https://doi.org/10.5281/zenodo.17165410
+- Type: uses data from → URL: https://doi.org/10.24381/cds.adbb2d47
 
 ## Publication note
 

@@ -5,7 +5,7 @@
   "description": "FORRT reproduction and partial independent-data replication of Sugiyama et al. (2026, Nature Communications): meltwater-driven acceleration of grounded ice at Langhovde Glacier, East Antarctica.",
   "version": "0.1.0",
   "dateCreated": "2026-10-06",
-  "dateModified": "2026-10-06",
+  "dateModified": "2026-10-07",
   "license": "https://spdx.org/licenses/MIT",
   "codeRepository": "https://github.com/annefou/langhovde-meltwater-replication",
   "identifier": "{{ZENODO_DOI}}",
@@ -15,7 +15,10 @@
     "name": "Python",
     "version": "3.12"
   },
-  "operatingSystem": ["Linux", "macOS"],
+  "operatingSystem": [
+    "Linux",
+    "macOS"
+  ],
   "author": [
     {
       "@type": "Person",
@@ -33,11 +36,43 @@
     "reproducibility",
     "FORRT",
     "nanopublication",
-    "Science-Live"
+    "Science-Live",
+    "glaciology",
+    "Antarctica",
+    "Langhovde Glacier",
+    "meltwater",
+    "subglacial hydrology",
+    "GNSS"
   ],
   "referencePublication": {
     "@type": "ScholarlyArticle",
     "name": "Acceleration of an Antarctic outlet glacier driven by surface meltwater input to the base",
+    "author": [
+      {
+        "@type": "Person",
+        "givenName": "Shin",
+        "familyName": "Sugiyama"
+      },
+      {
+        "@type": "Person",
+        "givenName": "Ken",
+        "familyName": "Kondo"
+      },
+      {
+        "@type": "Person",
+        "givenName": "Masahiro",
+        "familyName": "Minowa"
+      },
+      {
+        "@type": "Person",
+        "givenName": "Akira",
+        "familyName": "Watanabe"
+      }
+    ],
+    "isPartOf": {
+      "@type": "Periodical",
+      "name": "Nature Communications"
+    },
     "datePublished": "2026",
     "@id": "https://doi.org/10.1038/s41467-026-72724-x"
   },
@@ -45,5 +80,23 @@
     "@type": "Organization",
     "name": "Science Live",
     "url": "https://platform.sciencelive4all.org"
-  }
+  },
+  "softwareRequirements": [
+    "pixi (environment from pixi.toml / pixi.lock)",
+    "python 3.12",
+    "numpy",
+    "pandas",
+    "xarray",
+    "scipy",
+    "statsmodels",
+    "pyproj",
+    "matplotlib",
+    "netCDF4",
+    "zarr",
+    "s3fs",
+    "rasterio",
+    "pystac-client",
+    "jupytext",
+    "snakemake"
+  ]
 }

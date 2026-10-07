@@ -23,9 +23,10 @@ on:
 # To enable one: uncomment `env:` and the line(s) you need here, and the
 # matching step further down.
 #
-# env:
-#   COPERNICUS_CREDENTIALS_BASE64: ${{ secrets.COPERNICUS_CREDENTIALS_BASE64 }}
-#   CDSAPI_KEY: ${{ secrets.CDSAPI_KEY }}
+# CDSAPI_KEY: ERA5 is read from ECMWF's ARCO Zarr store with the CDS API key as a
+# Bearer token (notebooks/01_data_download.py reads it from this variable).
+env:
+  CDSAPI_KEY: ${{ secrets.CDSAPI_KEY }}
 
 jobs:
   # Unit tests for scripts/. Deliberately NOT gated on check-ready: these test
@@ -87,14 +88,18 @@ jobs:
       #     echo "url: https://cds.climate.copernicus.eu/api/v2" > ~/.cdsapirc
       #     echo "key: ${CDSAPI_KEY}" >> ~/.cdsapirc
 
-      # ----- data caching (uncomment + adjust path/key) -----
-      #
-      # - name: Cache input data
-      #   id: cache_data
-      #   uses: actions/cache@v5
-      #   with:
-      #     path: data/raw
-      #     key: input-data-v1
+      # ----- data caching -----
+      # The inputs are fixed-period archives (Mendeley deposit, JMA 1989-2026
+      # pages, ERA5/ITS_LIVE/Sentinel-2 subsets); 01_data_download.py skips
+      # anything already present, so a warm cache avoids re-scraping ~470 JMA
+      # pages and re-reading the cloud stores on every push. Bump the key to
+      # force a fresh download.
+      - name: Cache input data
+        if: steps.guard.outputs.ready == 'true'
+        uses: actions/cache@v5
+        with:
+          path: data/raw
+          key: input-data-v1
 
       - name: Run pipeline
         if: steps.guard.outputs.ready == 'true'

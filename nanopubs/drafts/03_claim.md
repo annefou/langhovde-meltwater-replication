@@ -1,6 +1,6 @@
 # 03 — FORRT Claim
 
-> Run the pre-flight checklist in `docs/forrt-form-fields.md` § Pre-flight checklist before drafting.
+> Fields from the live template (`template_fields("03_claim")`, 2026-10-07): claim (required), label (required), aida (required; filled by the chain wizard), forrtType (required, restricted choice), source (optional, full URL). Claim type chosen with `docs/claim-type-vocabulary.md`.
 
 **Form heading:** *"FORRT Claim — Declare an original claim according to FORRT, linking it to an AIDA sentence with a specific FORRT type."*
 
@@ -9,27 +9,21 @@
 <!-- field: claim -->
 ### Short URI suffix as claim ID (text input, required)
 
-Slug becomes part of the nanopub URI. Use kebab-case.
-
 ```
-
+langhovde-meltwater-acceleration-claim
 ```
 
 <!-- field: label -->
 ### Label of the claim, to find it later (text input, required)
 
-A descriptive title (not a sentence). Used for searches/discovery.
-
 ```
-
+Meltwater-driven acceleration of grounded ice at Langhovde Glacier, Antarctica (Sugiyama et al. 2026)
 ```
 
 <!-- field: aida -->
 ### Search for an AIDA sentence (search/select, required)
 
-URI of the AIDA published in step 02. Pull from `nanopubs/PUBLISHED.md`.
-
-> _If the AIDA was published via Nanodash (`w3id.org/np/...` namespace), the platform's search may not find it — paste the URI manually._
+The AIDA URI from step 02; the chain wizard fills it in.
 
 ```
 
@@ -38,20 +32,18 @@ URI of the AIDA published in step 02. Pull from `nanopubs/PUBLISHED.md`.
 <!-- field: forrtType -->
 ### Type of FORRT claim (dropdown, required)
 
-Pick one. See `docs/claim-type-vocabulary.md` for the seven options and how to choose.
+The claim asserts an observed empirical relationship: meltwater input to the bed, then acceleration. It is not a test result or a model's accuracy.
 
 - [ ] computational performance (Computational & Performance)
 - [ ] data governance (access control, licensing, FAIR compliance)
 - [ ] data quality (preprocessing, validation, normalization)
-- [ ] descriptive pattern (distribution, trend, proportion)
+- [x] descriptive pattern (distribution, trend, proportion)
 - [ ] model performance (accuracy, F1 score, evaluation metrics)
 - [ ] scalability (Computational & Performance)
 - [ ] statistical significance (significant difference, relationship, or effect)
 
 <!-- field: source -->
 ### Source URI (text input, optional)
-
-Full URL form: `https://doi.org/...` (NOT bare DOI).
 
 ```
 https://doi.org/10.1038/s41467-026-72724-x

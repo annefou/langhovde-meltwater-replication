@@ -37,11 +37,58 @@ keywords:
   - FORRT
   - nanopublication
   - Science-Live
+  - glaciology
+  - Antarctica
+  - Langhovde Glacier
+  - meltwater
+  - subglacial hydrology
+  - GNSS
 references:
   - type: article
     title: "Acceleration of an Antarctic outlet glacier driven by surface meltwater input to the base"
     authors:
       - family-names: "Sugiyama"
         given-names: "Shin"
-    year: "2026"
+      - family-names: "Kondo"
+        given-names: "Ken"
+      - family-names: "Minowa"
+        given-names: "Masahiro"
+      - family-names: "Watanabe"
+        given-names: "Akira"
+    journal: "Nature Communications"
+    volume: 17
+    start: 6102
+    year: 2026
     doi: "10.1038/s41467-026-72724-x"
+  - type: dataset
+    title: "Field data from Langhovde Glacier and MATLAB code for plotting"
+    authors:
+      - family-names: "Sugiyama"
+        given-names: "Shin"
+      - family-names: "Kondo"
+        given-names: "Ken"
+      - family-names: "Minowa"
+        given-names: "Masahiro"
+      - family-names: "Watanabe"
+        given-names: "Akira"
+    publisher:
+      name: "Mendeley Data"
+    year: 2026
+    doi: "10.17632/8wvtxg53ry.1"
+  - type: dataset
+    title: "merged ERA5-MERRA-2 Atmospheric River catalogs at Staffed Antarctic Stations"
+    authors:
+      - family-names: "Favier"
+        given-names: "Vincent"
+    publisher:
+      name: "Zenodo"
+    year: 2025
+    doi: "10.5281/zenodo.17165410"
+  - type: dataset
+    title: "ERA5 hourly data on single levels from 1940 to present"
+    authors:
+      - name: "Copernicus Climate Change Service"
+    publisher:
+      name: "ECMWF"
+    year: 2018
+    doi: "10.24381/cds.adbb2d47"
