@@ -222,3 +222,43 @@ Test 4's pre-registered window (25 Dec 2017 – 1 Jan 2022) includes the first n
 1. AR days overlapping Period I (21–25 Dec 2021) and Period II (2–6 Jan 2022).
 2. The number of December–January AR days in 2021/22, and its percentile among all December–January seasons in the catalogue.
 3. The fraction of JMA rain events (B-rain, within the catalogue span) with an AR day within ±1 day.
+
+## Remaining Arm B tests, pre-registered 2026-10-07 (before their data are downloaded in full)
+
+**Access note.** The independent Yukidori Zawa / Langhovde AWS for 2021/22 (Kudoh et al. 2026, doi:10.17592/001.2026052101) is listed as public. Its files are served only through the NIPR ADS web application, and no scriptable download path was found. The AMRDC mirror holds metadata only, and the authors' own on-glacier record (A20220506-001) is embargoed. It is recorded as a gap. JMA Syowa and ERA5 replace it.
+
+**Format checks done before this plan:**
+- the Picard SSM/I file: daily 0/1 melt flag on a 25 km EPSG:3976 grid, 1979-04 to 2025-03, with 3–5 flagged cells out of 8,487 in winter;
+- the AMSR2 10 km file size;
+- the existence of a CDS API credentials file (not read).
+
+### B-temp: temperature context from records independent of the authors' extract (C3 Period I, C9)
+1. **PDD from the original JMA daily record** (`jma_syowa_daily.parquet`), with the authors' definition: the sum of positive daily means over December–January.
+   - Replicated if 2021/22 is within ±0.5 °C·d of 10.6 and the 1989/90–2025/26 mean is within ±0.5 of 18.2, using seasons with complete December–January data.
+2. **Period I warmth** ("daily maximum temperatures of about 5 °C"). JMA Syowa daily maxima and the deposit's on-glacier AWS daily maxima, 19–25 Dec 2021. Reported.
+3. **ERA5 at the glacier.**
+   - Data: hourly 2 m temperature, ERA5 single levels (doi:10.24381/cds.adbb2d47), at the grid cell nearest GNSS1, December–January 1989/90–2025/26.
+   - Daily means from hourly UTC values; PDD as above.
+   - Replicated "2021/22 below average" if the 2021/22 PDD is below the median. "No trend" if the OLS p ≥ 0.05.
+   - Period I and II daily maxima reported.
+
+### B-melt: satellite surface-melt flags (C3/C4 Period I, C9)
+- **Products:** Picard SSM/I 25 km daily melt (cite Picard & Fily 2006, doi:10.1016/j.rse.2006.05.010) and the AMSR-E/AMSR2 10 km product from the same site, at the grid cell nearest GNSS1 (and nearest GNSS2, reported).
+1. Melt flagged on at least one day of Period I (21–25 Dec 2021); same for Period II (2–6 Jan).
+   - Replicated if flagged in at least one product. Not replicated if neither product flags melt.
+   - A 25 km and a 10 km cell both mix glacier, rock and sea ice; this is stated with the result.
+2. December–January melt days in 2021/22 against all December–January seasons in each product.
+   - Consistent with C9 ("meltwater generally more abundant than we observed in 2021/22") if 2021/22 is below the median.
+
+### B-velocity: satellite velocity feasibility (C3)
+- **Source:** ITS_LIVE v2 image-pair velocities (Landsat 8/9, Sentinel-2, Sentinel-1; NASA MEaSUREs, open). All pairs with both acquisitions between 2021-12-01 and 2022-02-10, at the pixel containing each GNSS site, with their reported errors. Read via the ITS_LIVE v2 datacube (Zarr) or the granules, whichever is reachable.
+1. **Agreement.** For each pair, the GNSS mean horizontal speed over the same interval (h = 12 h track; spline fill where needed, flagged). Report bias, RMS difference and correlation.
+2. **Detectability of the Period I speed-up.**
+   - Mean ITS_LIVE speed of pairs whose interval contains at least 3 days of 21–25 Dec, against pairs overlapping neither period.
+   - Feasible if the difference exceeds twice its standard error and has the same sign as GNSS. Otherwise not feasible.
+   - The paper's speed-up claim has no other independent test; a "not feasible" result is recorded as the gap.
+
+### B-optical: Sentinel-2 surface water around GNSS1 (Period I melt)
+- Sentinel-2 L2A scenes (Element84 Earth Search STAC) with at least 90% clear sky over a 2 km × 2 km box centred on GNSS1, from 10 Dec 2021 to 25 Jan 2022.
+- NDWI = (B03 − B08) / (B03 + B08). Fraction of box pixels with NDWI > 0.25, the meltwater threshold on ice of Yang & Smith 2013.
+- Reported: the fraction per scene. "Surface water detected in Period I" if the fraction on a Period I scene (20–25 Dec) is at least twice the fraction on the clear scene before (≤ 19 Dec) and above 1%.
