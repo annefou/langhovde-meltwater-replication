@@ -1,0 +1,14 @@
+claim,item,basis,paper,ours,tolerance,label,notes
+C1,"range of % flotation, BH2201/02 (raw)",pre-registered,93–97%,89.2–112.7%,bounds ±1 percentage point,not reproduced,hourly means 89.5–112.6%; Eq. 1 (seawater) 91.5–115.6%
+C1,"range of % flotation, before the late phases the paper describes",post hoc,93–97%,89.5–97.1% (BH2201 90.1–97.1; BH2202 89.5–91.9),bounds ±1 percentage point,not reproduced,BH2201 to 28 Jan; BH2202 to 21 Jan
+C1,"range of % flotation, Period II only (BH2201)",post hoc,93–97%,92.5–97.1%,bounds ±1 percentage point,reproduced,BH2202 not yet installed in Period II
+C2,pre-event range,pre-registered,29–33 m a.s.l.,28.5–32.6 m a.s.l.,±2 m,within tolerance,
+C2,3 Jan peak,pre-registered,51 m a.s.l. (97%) on 3 Jan,51.0 m a.s.l. at 2022-01-03T23:07 UTC (97.1%),±2 m,within tolerance,
+C2,rise on 3 Jan,pre-registered,20 m,20.2 m,±2 m,within tolerance,
+C2,drop within 1 h,pre-registered,~10 m,7.9 m,±3 m,within tolerance,
+C2,decline over 10 days,pre-registered,~30 m,24.0 m,±5 m,outside tolerance,
+C2,"decline over 10 days, measured from the peak",post hoc,~30 m,33.1 m,±5 m,within tolerance,alternative reading; not used for the overall C2 label
+C2,overall,pre-registered,"rise to 51 m on 3 Jan, then decline",4/5 items within tolerance,all items,partially reproduced,pressure recorded for Period II only (sensor installed 31 Dec)
+C8,head difference BH2201 − BH2203,pre-registered,9–44 m,7.6–122.9 m,bounds ±2 m,partially reproduced,hourly means 11.2–121.9 m
+C8,hydraulic gradient,pre-registered,0.9–4.4 × 10⁻² (1 km),0.8–12.3 × 10⁻² (1 km); 0.5–8.2 × 10⁻² (1.5 km),follows from the head difference,reported,Kondo et al. 2025 give 1.5 km to the grounding line (GAP_SOURCES.md D)
+C8,"head difference, before BH2201 exceeds flotation",post hoc,9–44 m,7.6–58.4 m,bounds ±2 m,partially reproduced,window ends 2022-02-04T08:45 UTC

@@ -68,4 +68,43 @@ Results with h = 1 h (the paper text) are reported next to every primary number.
 
 ## Amendments
 
-_None yet._
+### 2026-10-07: operational details for C1, C2 and C8 (written before computing them)
+
+These fill in measurement details the plan left open. No tolerance or decision rule changes.
+
+- **Resolution.** C1 and C8 bounds use the raw logger values: BH2201 1 min; BH2202 and BH2203 as logged. The plan says "min and max over the record" and specifies no smoothing. Hourly-mean bounds are reported alongside, for information only.
+- **C2, pre-event range.** BH2201 from installation + 6 h to 2 Jan 23:59 UTC.
+- **C2, rise.** Peak (maximum on 3 Jan UTC) minus the level at 3 Jan 00:00 UTC. This is anchored to the text: "On January 3, the water level rose progressively by 20 m".
+- **C2, 1 h drop.** Peak minus the minimum within the 60 min after the peak.
+- **C2, 10-day decline.** Hourly-mean level 1 h after the peak minus the hourly-mean level 10 days after the peak.
+- **C8.** BH2201 interpolated linearly to BH2203 timestamps over their common record. Differences are taken only where both have data.
+- **Flotation convention.** In `fig3.m`, % of flotation = 100 × (level − z_bed) / (551.31 × 0.91). That is overburden as freshwater head (ρ_i/ρ_w, ρ_w = 1000). This is the primary convention, as already stated in §1.
+
+### 2026-10-07: paper-text windows for C1, C2 and C8 (written AFTER seeing the step-2 results; post hoc)
+
+The pre-registered labels stand. These are additional, clearly labelled readings.
+
+**Why.** The paper itself describes phases that the whole-record rule includes:
+- BH2201: "High-frequency oscillations in the borehole level began on 29 January, followed in early February by a rapid increase to above the flotation level."
+- BH2202: "…until 22 January, when the water level in BH2202 rapidly rose to the flotation level".
+
+The authors' `fig3.m` also clips the water-level axis at 85 m a.s.l. So the paper's ranges cannot refer to the whole record. Each claim is therefore reported twice: under the pre-registered rule, and under a window taken from the paper's own text. Neither window is chosen from our numbers.
+
+- **C1, paper-text window.** BH2201 from installation + 6 h to 28 Jan (before the oscillations); BH2202 from installation + 6 h to 21 Jan (before the rise). Also reported: Period II only (31 Dec – 6 Jan), the only period the 93–94% → 97% text numbers describe.
+- **C8, paper-text window.** Common record up to the first time BH2201 exceeds 100% of flotation ("rapid increase to above the flotation level").
+- **C2, alternative reading of the 10-day decline.** Peak minus the hourly mean 10 days later, in case "~30 m" was meant from the peak. The pre-registered reading (from 1 h after the peak, i.e. after the 10 m drop) stays primary.
+
+### 2026-10-07: missing MATLAB functions reconstructed and validated against fig3.eps
+
+`local_regression` and `latlon2utm` are reconstructed in the generic module `notebooks/gnss.py`, which never reads the figures. Gaps are detected from timestamps; any threshold of 8.3–29.1 h reproduces the hard-coded rows, and 12 h is used. The reconstruction was identified once by `scripts/validate_reconstruction.py` (output `results/reconstruction_validation.csv`) and is guarded by `tests/test_gnss.py`. That test runs the full generic pipeline on the raw files against `fig3.eps`, downloading the deposit if needed, alongside synthetic unit tests. The deposit includes `fig3.eps`, the vector output of the authors' own code. Its plotted curves were recomputed from the raw GNSS files for 4 kernels × 2 regression degrees × 8 bandwidths.
+
+**Only one candidate matches:** a Gaussian-kernel local linear regression with σ = h, at **h = 12 h**:
+- GNSS2 speed: 0.00007 m/d RMS
+- GNSS1 speed: 0.00004 m/d RMS
+- GNSS1 uplift: 0.06 mm RMS
+
+These residuals are at the EPS rounding precision. h = 11 h and h = 13 h are about 9× worse. UTM zone 37S (WGS84, pyproj) reproduces `latlon2utm` within the same residuals.
+
+This confirms the §1 smoother. It also establishes from the published figure itself that **Fig. 3 used 12 h smoothing**, against the Methods' "bandwidth of 1 h". The primary processing (h = 12 h) was already set in §2; no rule changes.
+
+**Noted for step 4.** `fig3.m` shades Period I as 22–27 Dec (`tmin+3 … +8`) and Period II as 2–7 Jan (`tmin+14 … +19`). The plan's windows come from the paper text: 21–25 Dec and 2–6 Jan. Both will be reported.

@@ -26,6 +26,10 @@ pyarrow = "*"
 # Pillow downscales + base64-inlines the headline figure into the reader-facing
 # story page (scripts/build_story.py), so the generated HTML is self-contained.
 pillow = "*"
+# --- this replication ---
+requests = "*"   # 01: Mendeley deposit download
+pyproj = "*"     # 02: GNSS lat/lon -> UTM 37S (EPSG:32737)
+netcdf4 = "*"    # 02/03: NetCDF intermediates (DOMAIN.md: no .npz)
 # --- notebook execution + Jupyter Book ---
 jupytext = "*"
 jupyterlab = "*"
@@ -37,9 +41,7 @@ snakemake = "*"
 # Examples (uncomment as needed):
 # statsmodels = "*"          # GLM/GLMM regression
 # scikit-learn = "*"         # classical ML
-# pyproj = "*"               # CRS + map projections
 # cartopy = "*"              # geographic plotting
-# netcdf4 = "*"              # NetCDF I/O — preferred over .npz for arrays (see DOMAIN.md)
 # zarr = "*"                 # Zarr — preferred for arrays >2 GB or cloud-archived (see DOMAIN.md)
 # cdsapi = "*"               # Copernicus Climate Data Store
 # copernicusmarine = "*"     # Copernicus Marine Service
