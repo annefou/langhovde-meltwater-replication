@@ -233,6 +233,251 @@ record("B-AR", "JMA rain events with an AR day", "—",
        "events without AR: " + ", ".join(f"{r.start:%Y-%m-%d}" for r in rain_in_span.itertuples() if not near_ar(r, 0)))
 
 # %% [markdown]
+# ## B-temp: temperature records independent of the authors' extract (C3 Period I, C9)
+#
+# 1. PDD from the original JMA daily record, using the authors' definition
+#    (`fig_s3.m`): the sum of positive daily means, December–January.
+# 2. Period I warmth: JMA Syowa and on-glacier AWS daily maxima, 19–25 Dec 2021.
+# 3. ERA5 at the glacier (below, once downloaded).
+
+# %%
+import xarray as xr  # noqa: E402
+
+dj = jma[jma.date.dt.month.isin([12, 1])].copy()
+dj["season"] = np.where(dj.date.dt.month == 12, dj.date.dt.year + 1, dj.date.dt.year)
+complete = dj.groupby("season").t_mean.apply(lambda v: v.notna().sum() == 62)
+pdd_jma = dj[dj.season.isin(complete[complete].index)].groupby("season").t_mean.apply(lambda v: v.clip(lower=0).sum())
+pdd_jma = pdd_jma.loc[1990:2026]
+p22_j, mean_j = float(pdd_jma.loc[2022]), float(pdd_jma.mean())
+dep = xr.open_dataset(CLEAN_DIR / "syowa_temperature.nc").to_dataframe()
+dep_vs_jma = dep.set_index(dep.index.normalize()).t_mean.sub(jma.set_index("date").t_mean).dropna()
+record("B-temp", "PDD from the original JMA record", "10.6 °C d (2021/22); mean 18.2 °C d (1989/90–2025/26)",
+       f"{p22_j:.1f}; mean {mean_j:.2f} over {len(pdd_jma)} complete seasons ({pdd_jma.index.min() - 1}/"
+       f"{pdd_jma.index.min()}–{pdd_jma.index.max() - 1}/{pdd_jma.index.max()})", "±0.5 °C d each",
+       "replicated" if abs(p22_j - 10.6) <= 0.5 and abs(mean_j - 18.2) <= 0.5 else "not replicated",
+       f"deposit vs JMA daily means: {int((dep_vs_jma.abs() > 0.05).sum())} of {len(dep_vs_jma)} days differ by > 0.05 °C")
+
+aws = xr.open_dataset(CLEAN_DIR / "aws.nc").air_temperature.to_series()
+aws_max = aws.groupby(aws.index.floor("D")).max()
+jma_i = jma.set_index("date")
+days_i = pd.date_range("2021-12-19", "2021-12-25")
+record("B-temp", "daily maximum temperature, 19–25 Dec 2021", "about 5 °C ('period of good weather')",
+       "JMA Syowa: " + ", ".join(f"{d:%d} {jma_i.t_max.get(d, np.nan):.1f}" for d in days_i)
+       + " | glacier AWS: " + ", ".join(f"{d:%d} {aws_max.get(d, np.nan):.1f}" for d in days_i), "—", "reported",
+       "Syowa is on an island ~25 km away; the AWS is the deposit's on-glacier station (UTC days)")
+
+# %% [markdown]
+# ### B-temp 3: ERA5 2 m temperature at the glacier
+#
+# Grid cell nearest GNSS1. Daily means from hourly UTC values, then PDD over
+# December–January.
+
+# %%
+from scipy import stats  # noqa: E402
+
+GNSS1_LATLON = (-69.214612056, 39.846029576)
+cell = xr.open_dataset(Path("../data/raw/era5_arco_t2m_gnss1_dec_jan_1989_2026.nc")).t2m   # ECMWF ARCO, nearest cell
+t2m = (cell.to_series() - 273.15).rename_axis("time")
+t2m = t2m[t2m.index.month.isin([12, 1])]
+daily = t2m.groupby(t2m.index.floor("D")).mean()
+season = np.where(daily.index.month == 12, daily.index.year + 1, daily.index.year)
+dfe = pd.DataFrame({"t": daily.to_numpy(), "season": season}, index=daily.index)
+full = dfe.groupby("season").t.count() == 62
+pdd_era = dfe[dfe.season.isin(full[full].index)].groupby("season").t.apply(lambda v: v.clip(lower=0).sum())
+pdd_era = pdd_era.loc[1990:2026]
+p22_e = float(pdd_era.loc[2022])
+pct_e = 100 * float((pdd_era < p22_e).mean())
+lr = stats.linregress(pdd_era.index.to_numpy(float), pdd_era.to_numpy())
+record("B-temp", "ERA5 PDD at the glacier, 2021/22 vs 1989/90–2025/26", "2021/22 below the long-term mean (Syowa)",
+       f"{p22_e:.1f} °C d; percentile {pct_e:.0f}; median {pdd_era.median():.1f}; cell "
+       f"{float(cell.latitude):.2f}°, {float(cell.longitude):.2f}°", "below the median",
+       "replicated" if p22_e < pdd_era.median() else "not replicated",
+       f"r with JMA Syowa PDD: {np.corrcoef(pdd_era, pdd_jma.reindex(pdd_era.index))[0, 1]:.2f}")
+record("B-temp", "trend in ERA5 PDD at the glacier", "no significant trend",
+       f"OLS slope {lr.slope * 10:+.2f} °C d per decade, p = {lr.pvalue:.2f}", "p ≥ 0.05",
+       "replicated" if lr.pvalue >= 0.05 else "not replicated")
+# Post hoc: ERA5's SST/sea-ice forcing changed in September 2007 (HadISST2 before, OSTIA
+# after; ERA5 data documentation, ECMWF Confluence). Split the record at that change and
+# compare with Syowa over the same seasons (2008 = Dec 2007 – Jan 2008, after the change).
+pre_e, post_e = pdd_era.loc[:2007], pdd_era.loc[2008:]
+pre_j, post_j = pdd_jma.reindex(pre_e.index), pdd_jma.reindex(post_e.index)
+tr = {k: stats.linregress(v.index.to_numpy(float), v.to_numpy()) for k, v in [("pre", pre_e), ("post", post_e)]}
+record("B-temp", "ERA5 PDD split at the September 2007 forcing change", "—",
+       f"ERA5 mean {pre_e.mean():.1f} → {post_e.mean():.1f} °C d (Syowa {pre_j.mean():.1f} → {post_j.mean():.1f}); "
+       f"ERA5 trend within segments: {tr['pre'].slope:+.2f} °C d/yr (p = {tr['pre'].pvalue:.2f}, ≤2007), "
+       f"{tr['post'].slope:+.2f} °C d/yr (p = {tr['post'].pvalue:.2f}, ≥2008)",
+       "—", "reported",
+       "the full-record ERA5 decline comes from a step at ERA5's SST/sea-ice input change (HadISST2 → OSTIA, "
+       "Sept 2007), with opposite trends either side, and has no counterpart at Syowa: ERA5 at this coastal cell "
+       "is not a reliable trend indicator (likely reanalysis inhomogeneity; not proven)", basis="post hoc")
+aws_h = aws.resample("1h").mean()
+e_h = t2m.reindex(aws_h.index).dropna()
+record("B-temp", "ERA5 vs on-glacier AWS, field season (hourly)", "—",
+       f"ERA5 − AWS {float((e_h - aws_h.reindex(e_h.index)).mean()):+.1f} °C; r = "
+       f"{np.corrcoef(e_h, aws_h.reindex(e_h.index))[0, 1]:.2f} (n = {len(e_h)} h)", "—", "reported",
+       "ERA5 underestimates near-surface warmth at the glacier", basis="post hoc")
+tmax_e = t2m.groupby(t2m.index.floor("D")).max()
+record("B-temp", "ERA5 daily maximum at the glacier, Periods I and II", "about 5 °C (Period I)",
+       "PI: " + ", ".join(f"{d:%d} {tmax_e.get(d, np.nan):.1f}" for d in pd.date_range("2021-12-19", "2021-12-25"))
+       + " | PII: " + ", ".join(f"{d:%d} {tmax_e.get(d, np.nan):.1f}" for d in pd.date_range("2022-01-01", "2022-01-06")),
+       "—", "reported", "UTC days; a 0.25° cell")
+
+# %% [markdown]
+# ## B-melt: passive-microwave surface-melt flags
+#
+# Daily wet/dry status (1 = melt). The grid cell nearest GNSS1 that has data; a 25 km or
+# 10 km cell mixes glacier, rock and sea ice.
+
+# %%
+def melt_series(path: Path, var: str = "melt") -> tuple[pd.Series, str]:
+    ds = xr.open_dataset(path)
+    if var not in ds:                                     # AMSR: either filtered pass flags melt
+        a, d = ds["snow_status_wet_dry_19H_ASC_filter"], ds["snow_status_wet_dry_19H_DSC_filter"]
+        ds[var] = xr.where(a.isnull() & d.isnull(), np.nan, np.fmax(a.fillna(0), d.fillna(0)))
+    lat, lon = ds["lat"].values, ds["lon"].values
+    valid = np.isfinite(ds[var].sel(time="2021-12-15", method="nearest").values)
+    d = np.hypot((lat - GNSS1_LATLON[0]) * 111, (lon - GNSS1_LATLON[1]) * 111 * np.cos(np.deg2rad(lat)))
+    d[~valid] = np.inf
+    iy, ix = np.unravel_index(np.argmin(d), d.shape)
+    sr = ds[var].isel({ds[var].dims[1]: iy, ds[var].dims[2]: ix}).to_series()
+    return sr, f"cell centre {lat[iy, ix]:.3f}°, {lon[iy, ix]:.3f}°, {d[iy, ix]:.1f} km from GNSS1"
+
+
+melt_files = {"SSM/I 25 km": Path("../data/raw/melt/CumJour-Antarctic-ssmi-1979-2025-H19.nc"),
+              "AMSR 10 km": Path("../data/raw/melt/melt-AMSRJ-antarctic-10km.nc")}
+detected = {}
+for name, path in melt_files.items():
+    sr, where = melt_series(path)
+    for per, (a, b) in {"I": ("2021-12-21", "2021-12-25"), "II": ("2022-01-02", "2022-01-06")}.items():
+        w = sr.loc[a:b]
+        detected[name, per] = bool((w > 0).any())
+        record("B-melt", f"melt flag {name}, Period {per}", "surface melt during the event",
+               f"{int((w > 0).sum())}/{int(w.notna().sum())} days flagged ({', '.join(f'{d:%d %b}' for d in w[w > 0].index) or 'none'})",
+               "flagged in ≥1 product", "reported", where)
+    sdj = sr[sr.index.month.isin([12, 1])]
+    seas = np.where(sdj.index.month == 12, sdj.index.year + 1, sdj.index.year)
+    counts = pd.Series(sdj.to_numpy(), index=seas).groupby(level=0).agg(["sum", "count"])
+    counts = counts[counts["count"] >= 55]["sum"]
+    if 2022 in counts.index:
+        record("B-melt", f"December–January melt days, {name}", "2021/22 less meltwater than usual (C9)",
+               f"{counts.loc[2022]:.0f} days; median {counts.median():.0f} over {len(counts)} seasons "
+               f"({counts.index.min() - 1}/{counts.index.min()}–{counts.index.max() - 1}/{counts.index.max()})",
+               "below the median", "replicated" if counts.loc[2022] < counts.median() else "not replicated", where)
+for per in ["I", "II"]:
+    hit = any(detected[n, per] for n in melt_files)
+    record("B-melt", f"surface melt detected in Period {per}", "melt / rain on the glacier", "yes" if hit else "no",
+           "flagged in ≥1 product", "replicated" if hit else "not replicated",
+           "; ".join(f"{n}: {'yes' if detected[n, per] else 'no'}" for n in melt_files))
+
+# %% [markdown]
+# ## B-velocity: ITS_LIVE image-pair velocity at the GNSS sites
+#
+# For each pair: GNSS mean horizontal speed over the same interval, from the h = 12 h
+# track with the spline fill; the fraction of the interval that is interpolated is
+# recorded. ITS_LIVE v is in m/yr and converted to m/d.
+
+# %%
+its = xr.open_dataset(Path("../data/raw/itslive_gnss_pixels_202112_202202.nc"))
+gt = xr.open_dataset(RESULTS_DIR / "gnss_tracks.nc")
+PI, PII = (pd.Timestamp("2021-12-21"), pd.Timestamp("2021-12-26")), (pd.Timestamp("2022-01-02"), pd.Timestamp("2022-01-07"))
+
+
+def overlap_days(a: pd.Timestamp, b: pd.Timestamp, w: tuple) -> float:
+    return max(0.0, (min(b, w[1]) - max(a, w[0])) / pd.Timedelta("1D"))
+
+
+pairs = []
+for site in ["GNSS1", "GNSS2"]:
+    sp = gt[[f"speed_{site}_h12_spline", f"observed_{site}_h12_spline"]].to_dataframe().dropna()
+    sp.columns = ["speed", "observed"]
+    px = its.sel(site=site)
+    for i in range(px.sizes["mid_date"]):
+        v = float(px.v.isel(mid_date=i))
+        if not np.isfinite(v):
+            continue
+        a = pd.Timestamp(px.acquisition_date_img1.isel(mid_date=i).values)
+        b = pd.Timestamp(px.acquisition_date_img2.isel(mid_date=i).values)
+        seg = sp.loc[a:b]
+        if len(seg) == 0 or (seg.index[0] - a) > pd.Timedelta("1D") or (b - seg.index[-1]) > pd.Timedelta("1D"):
+            continue                                                   # GNSS record does not span the pair
+        pairs.append(dict(site=site, t1=a, t2=b, dt_days=(b - a) / pd.Timedelta("1D"),
+                          sat=str(px.satellite_img1.isel(mid_date=i).values), v_its=v / 365.25,
+                          v_err=float(px.v_error.isel(mid_date=i)) / 365.25, v_gnss=float(seg.speed.mean()),
+                          interp_frac=float(1 - seg.observed.astype(bool).mean()),
+                          ov_I=overlap_days(a, b, PI), ov_II=overlap_days(a, b, PII)))
+pairs = pd.DataFrame(pairs)
+pairs.to_csv(RESULTS_DIR / "itslive_pairs.csv", index=False)
+for site, g in pairs.groupby("site"):
+    d = g.v_its - g.v_gnss
+    record("B-velocity", f"ITS_LIVE vs GNSS pair-mean speed, {site}", "—",
+           f"n = {len(g)} pairs ({g.dt_days.min():.0f}–{g.dt_days.max():.0f} d); bias {d.mean():+.3f} m/d; "
+           f"RMS {np.sqrt((d ** 2).mean()):.3f} m/d; r = {np.corrcoef(g.v_its, g.v_gnss)[0, 1]:.2f}; "
+           f"GNSS mean {g.v_gnss.mean():.3f} m/d", "—", "reported",
+           f"median ITS_LIVE error {g.v_err.median():.3f} m/d")
+    inI = g[g.ov_I >= 3]
+    quiet = g[(g.ov_I == 0) & (g.ov_II == 0)]
+    if len(inI) >= 2 and len(quiet) >= 2:
+        diff = inI.v_its.mean() - quiet.v_its.mean()
+        se = np.sqrt(inI.v_its.var() / len(inI) + quiet.v_its.var() / len(quiet))
+        gdiff = inI.v_gnss.mean() - quiet.v_gnss.mean()
+        ok = diff > 2 * se and np.sign(diff) == np.sign(gdiff)
+        record("B-velocity", f"Period I speed-up detectable by ITS_LIVE, {site}", "speed-up 10–20% (GNSS)",
+               f"ITS_LIVE {diff:+.3f} ± {se:.3f} m/d (pairs ≥3 d in PI: {len(inI)}; quiet: {len(quiet)}); "
+               f"GNSS on the same pairs {gdiff:+.3f} m/d", "difference > 2 SE, same sign as GNSS",
+               "feasible" if ok else "not feasible")
+    else:
+        record("B-velocity", f"Period I speed-up detectable by ITS_LIVE, {site}", "speed-up 10–20% (GNSS)",
+               f"too few pairs (in PI: {len(inI)}, quiet: {len(quiet)})", "difference > 2 SE", "not feasible")
+n_valid = {site: int(np.isfinite(its.sel(site=site).v.values).sum()) for site in ["GNSS1", "GNSS2"]}
+record("B-velocity", "ITS_LIVE pairs available", "—",
+       f"{its.sizes['mid_date']} pairs per pixel in the window; valid v: GNSS1 {n_valid['GNSS1']}, GNSS2 {n_valid['GNSS2']}; "
+       f"spanned by the GNSS record: GNSS1 {int((pairs.site == 'GNSS1').sum())}, GNSS2 {int((pairs.site == 'GNSS2').sum())}",
+       "—", "reported", "no valid Sentinel-1 pair at either pixel; shortest valid pair 8 days")
+
+# %% [markdown]
+# ## B-optical: Sentinel-2 surface water around GNSS1
+#
+# Clear sky: at least 90% of the 2 km box neither cloud nor cloud shadow (SCL 3, 8, 9, 10)
+# nor no-data (SCL 0, 1). NDWI = (B03 − B08) / (B03 + B08) on reflectance. The BOA offset
+# (−1000) is removed for processing baseline ≥ 04.00 when not already applied upstream.
+
+# %%
+scenes = []
+for path in sorted(Path("../data/raw/s2").glob("*.nc")):
+    ds = xr.open_dataset(path)
+    scl = ds.scl.values
+    nodata, cloud = np.isin(scl, [0, 1]), np.isin(scl, [3, 8, 9, 10])
+    offset = 1000 if (ds.attrs.get("processing_baseline", "0") >= "04.00"
+                      and ds.attrs.get("boa_offset_applied", "") not in ("True", "true")) else 0
+    g = ds.green.values.astype(float) - offset
+    n = ds.nir.values.astype(float) - offset
+    ok = ~nodata & ~cloud & (g + n > 0)
+    ndwi = np.where(ok, (g - n) / np.where(g + n == 0, np.nan, g + n), np.nan)
+    scenes.append(dict(scene=ds.attrs["item"], time=pd.Timestamp(ds.attrs["datetime"]).tz_localize(None),
+                       clear=float(1 - (nodata | cloud).mean()), water_frac=float(np.nanmean(ndwi > 0.25)) if ok.any() else np.nan,
+                       ndwi_median=float(np.nanmedian(ndwi)) if ok.any() else np.nan, offset=offset,
+                       baseline=ds.attrs.get("processing_baseline", "")))
+# The catalogue lists reprocessed duplicates of the same acquisition: keep the latest baseline.
+scenes = (pd.DataFrame(scenes).assign(acq=lambda d: d.time.dt.floor("min"))
+          .sort_values(["acq", "baseline"]).groupby("acq").tail(1).sort_values("time"))
+scenes.to_csv(RESULTS_DIR / "s2_scenes.csv", index=False)
+clear = scenes[scenes.clear >= 0.9]
+print(clear[["time", "clear", "water_frac", "ndwi_median"]].round(3).to_string(index=False))
+pre = clear[clear.time < pd.Timestamp("2021-12-20")]
+inI = clear[(clear.time >= pd.Timestamp("2021-12-20")) & (clear.time < pd.Timestamp("2021-12-26"))]
+if len(pre) and len(inI):
+    ref = float(pre.iloc[-1].water_frac)
+    best = inI.loc[inI.water_frac.idxmax()]
+    hit = best.water_frac >= max(2 * ref, 0.01)
+    lab = "replicated" if hit else "not replicated"
+    ours = (f"Period I max {best.water_frac:.3f} on {best.time:%d %b} vs {ref:.3f} on "
+            f"{pre.iloc[-1].time:%d %b}; clear scenes: {len(clear)} of {len(scenes)}")
+else:
+    lab, ours = "not testable", f"clear scenes before / in Period I: {len(pre)} / {len(inI)} (of {len(scenes)})"
+record("B-optical", "surface water (NDWI > 0.25) around GNSS1 in Period I", "meltwater on the glacier surface",
+       ours, "≥ 2× the clear scene before and > 1%", lab)
+
+# %% [markdown]
 # ## Persist results
 
 # %%

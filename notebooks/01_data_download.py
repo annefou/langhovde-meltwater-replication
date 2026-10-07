@@ -39,8 +39,13 @@ import json
 import zipfile
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import requests
+import xarray as xr
+from pyproj import Transformer
+
+SITES = {"GNSS1": (-69.214612056, 39.846029576), "GNSS2": (-69.203681309, 39.820243087)}   # first fixes, LG05/LG04
 
 # %%
 RAW_DIR = Path("../data/raw")
@@ -255,6 +260,168 @@ SOURCES.append({
     "accessed_on": "2026-10-07", "sha256": sha256(AR_PATH),
 })
 print(f"{AR_PATH.name}: {sum(1 for _ in AR_PATH.open())} AR days")
+
+# %% [markdown]
+# ## ERA5 hourly 2 m temperature at Langhovde, December–January 1989–2026 (Arm B, B-temp)
+#
+# ERA5 hourly single levels (doi:10.24381/cds.adbb2d47, CC BY 4.0), read from ECMWF's
+# analysis-ready cloud-optimised (ARCO) Zarr store. The store is geo-chunked for point
+# time series. Authentication uses the CDS API key as a Bearer token, from `CDSAPI_KEY`
+# or the `key:` line of `~/.cdsapirc` (https://cds.climate.copernicus.eu/how-to-api).
+# In CI, set `CDSAPI_KEY` from a secret. The key is never printed.
+
+# %%
+import os  # noqa: E402
+import re  # noqa: E402
+
+ERA5_ARCO = "https://arco.datastores.ecmwf.int/cadl-arco-geo-002/arco/reanalysis_era5_single_levels/sfc/geoChunked.zarr"
+ERA5_PATH = RAW_DIR / "era5_arco_t2m_gnss1_dec_jan_1989_2026.nc"
+
+
+def cds_key() -> str:
+    if os.environ.get("CDSAPI_KEY"):
+        return os.environ["CDSAPI_KEY"]
+    m = re.search(r"^key:\s*(\S+)", Path("~/.cdsapirc").expanduser().read_text(), re.M)
+    if not m:
+        raise RuntimeError("set CDSAPI_KEY or add 'key: ...' to ~/.cdsapirc")
+    return m.group(1)
+
+
+if not ERA5_PATH.exists():
+    era5 = xr.open_zarr(ERA5_ARCO, consolidated=True,
+                        storage_options={"headers": {"Authorization": f"Bearer {cds_key()}"}})
+    lat, lon = SITES["GNSS1"]
+    pt = era5.t2m.sel(latitude=lat, longitude=lon % 360, method="nearest")
+    pt = pt.sel(time=slice("1989-12-01", "2026-01-31T23:00"))
+    pt = pt.sel(time=pt.time.dt.month.isin([12, 1])).load()
+    pt.attrs.update(source=ERA5_ARCO, note="ERA5 grid cell nearest GNSS1 (first fix of LG05)")
+    pt.to_dataset(name="t2m").to_netcdf(ERA5_PATH)
+SOURCES.append({
+    "name": "ERA5 hourly 2 m temperature at the grid cell nearest GNSS1, Dec and Jan 1989-2026 (ECMWF ARCO Zarr)",
+    "doi": "10.24381/cds.adbb2d47", "url": ERA5_ARCO, "license": "CC-BY-4.0",
+    "accessed_on": "2026-10-07", "sha256": sha256(ERA5_PATH),
+})
+_e = xr.open_dataset(ERA5_PATH)
+print(f"{ERA5_PATH.name}: {_e.sizes['time']} hours at {float(_e.latitude):.2f}, {float(_e.longitude):.2f}")
+
+# %% [markdown]
+# ## Passive-microwave surface melt, Antarctica (Arm B, B-melt)
+#
+# Daily wet/dry snow status from G. Picard (Université Grenoble Alpes):
+# - SSM/I 19 GHz, 25 km, 1979–2025 (zip with NetCDF);
+# - AMSR-E/AMSR2, 10 km, 2002–present.
+#
+# Method: Picard & Fily (2006), doi:10.1016/j.rse.2006.05.010. The site gives no
+# dataset DOI or licence beyond use with citation.
+
+# %%
+MELT = {
+    "ssmi_25km": ("https://snow.univ-grenoble-alpes.fr/files/melting-1979-2025-v1.zip", "melting-1979-2025-v1.zip"),
+    "amsr_10km": ("https://snow.univ-grenoble-alpes.fr/opendata/melt-AMSRJ-antarctic-10km.nc",
+                  "melt-AMSRJ-antarctic-10km.nc"),
+}
+MELT_DIR = RAW_DIR / "melt"
+MELT_DIR.mkdir(exist_ok=True)
+for key, (url, fname) in MELT.items():
+    path = MELT_DIR / fname
+    if not path.exists():
+        with requests.get(url, stream=True, timeout=600) as r:
+            r.raise_for_status()
+            tmp = path.with_suffix(".part")
+            with open(tmp, "wb") as f:
+                for chunk in r.iter_content(chunk_size=1 << 20):
+                    f.write(chunk)
+            tmp.rename(path)
+    if path.suffix == ".zip":
+        with zipfile.ZipFile(path) as z:
+            z.extract("CumJour-Antarctic-ssmi-1979-2025-H19.nc", MELT_DIR)
+    SOURCES.append({"name": f"Picard surface melt, {key}", "doi": None, "url": url,
+                    "license": "cite Picard & Fily 2006 (doi:10.1016/j.rse.2006.05.010)",
+                    "accessed_on": "2026-10-07", "sha256": sha256(path)})
+print("melt:", sorted(p.name for p in MELT_DIR.iterdir()))
+
+# %% [markdown]
+# ## ITS_LIVE v2 image-pair velocities at the GNSS sites (Arm B, B-velocity)
+#
+# NASA MEaSUREs ITS_LIVE version 2 datacube (Zarr on public S3) for the 120 m tile
+# containing Langhovde. For each GNSS site, the pixel containing its first position:
+# every image pair with both acquisitions between 2021-12-01 and 2022-02-10.
+# Velocities in m/yr. Landsat pairs: doi:10.5067/IMR9D3PEI28U; Sentinel-1:
+# doi:10.5067/0506KQLS6512. NASA open data.
+
+# %%
+ITS_URL = ("https://its-live-data.s3.amazonaws.com/datacubes/v2-updated-october2024/S60E030/"
+           "ITS_LIVE_vel_EPSG3031_G0120_X1450000_Y1750000.zarr")
+ITS_PATH = RAW_DIR / "itslive_gnss_pixels_202112_202202.nc"
+if not ITS_PATH.exists():
+    cube = xr.open_dataset(ITS_URL, engine="zarr", consolidated=True)
+    to_ps = Transformer.from_crs("EPSG:4326", "EPSG:3031", always_xy=True)
+    keep = ["v", "v_error", "vx", "vy", "acquisition_date_img1", "acquisition_date_img2", "satellite_img1",
+            "satellite_img2", "date_dt", "roi_valid_percentage", "granule_url"]
+    parts = []
+    for site, (lat, lon) in SITES.items():
+        x, y = to_ps.transform(lon, lat)
+        px = cube[keep].sel(x=x, y=y, method="nearest")
+        a1, a2 = px.acquisition_date_img1.load(), px.acquisition_date_img2.load()
+        sel = (a1 >= np.datetime64("2021-12-01")) & (a2 <= np.datetime64("2022-02-10"))
+        parts.append(px.isel(mid_date=np.flatnonzero(sel.values)).load().expand_dims(site=[site]))
+    out = xr.concat(parts, dim="site", join="outer")
+    for k in out.data_vars:
+        out[k].encoding = {}
+    out.attrs = {"source": ITS_URL, "selection": "pixel nearest each GNSS site; pairs within 2021-12-01..2022-02-10"}
+    out.to_netcdf(ITS_PATH)
+SOURCES.append({"name": "ITS_LIVE v2 datacube pixels at GNSS1/GNSS2, Dec 2021 - Feb 2022", "doi": "10.5067/IMR9D3PEI28U",
+                "url": ITS_URL, "license": "NASA open data", "accessed_on": "2026-10-07", "sha256": sha256(ITS_PATH)})
+print(f"{ITS_PATH.name}: {xr.open_dataset(ITS_PATH).sizes}")
+
+# %% [markdown]
+# ## Sentinel-2 L2A subsets around GNSS1 (Arm B, B-optical)
+#
+# Element84 Earth Search STAC (`sentinel-2-l2a`). For every scene intersecting GNSS1
+# between 10 Dec 2021 and 25 Jan 2022, a 2 km × 2 km box centred on GNSS1 is read
+# from the cloud-optimised GeoTIFFs:
+# - B03 (green) and B08 (NIR) at 10 m;
+# - the scene classification (SCL, 20 m), resampled nearest to 10 m.
+#
+# Copernicus Sentinel data, free and open licence.
+
+# %%
+import rasterio  # noqa: E402
+from pystac_client import Client  # noqa: E402
+from rasterio.enums import Resampling  # noqa: E402
+from rasterio.warp import transform_bounds  # noqa: E402
+from rasterio.windows import from_bounds  # noqa: E402
+
+S2_DIR = RAW_DIR / "s2"
+S2_DIR.mkdir(exist_ok=True)
+g1_lat, g1_lon = SITES["GNSS1"]
+gx, gy = Transformer.from_crs("EPSG:4326", "EPSG:32737", always_xy=True).transform(g1_lon, g1_lat)
+BOX = (gx - 1000, gy - 1000, gx + 1000, gy + 1000)                      # EPSG:32737
+items = Client.open("https://earth-search.aws.element84.com/v1").search(
+    collections=["sentinel-2-l2a"], intersects={"type": "Point", "coordinates": [g1_lon, g1_lat]},
+    datetime="2021-12-10/2022-01-25").item_collection()
+for item in items:
+    path = S2_DIR / f"{item.id}.nc"
+    if path.exists():
+        continue
+    bands = {}
+    for name, asset in [("green", "green"), ("nir", "nir"), ("scl", "scl")]:
+        with rasterio.open(item.assets[asset].href) as src:
+            bounds = transform_bounds("EPSG:32737", src.crs, *BOX)
+            win = from_bounds(*bounds, transform=src.transform)
+            bands[name] = src.read(1, window=win, out_shape=(200, 200), resampling=Resampling.nearest,
+                                   boundless=True, fill_value=0)
+    xr.Dataset({k: (("y", "x"), v) for k, v in bands.items()},
+               attrs={"item": item.id, "datetime": str(item.datetime), "box_epsg32737": str(BOX),
+                      "platform": item.properties.get("platform", ""),
+                      # Baseline >= 04.00 adds a BOA offset of -1000 unless already removed upstream.
+                      "processing_baseline": str(item.properties.get("s2:processing_baseline", "")),
+                      "boa_offset_applied": str(item.properties.get("earthsearch:boa_offset_applied", ""))}
+               ).to_netcdf(path)
+SOURCES.append({"name": "Sentinel-2 L2A 2 km subsets around GNSS1, 2021-12-10 to 2022-01-25 (Element84 Earth Search)",
+                "doi": None, "url": "https://earth-search.aws.element84.com/v1", "license": "Copernicus free and open",
+                "accessed_on": "2026-10-07", "sha256": None})
+print(f"Sentinel-2: {len(items)} scenes found, {len(list(S2_DIR.glob('*.nc')))} subsets cached")
 
 # %% [markdown]
 # ## Source log

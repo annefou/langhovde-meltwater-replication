@@ -38,6 +38,10 @@ ipykernel = "*"
 # --- pipeline driver ---
 snakemake = "*"
 statsmodels = ">=0.15.0,<0.16"
+rasterio = ">=1.5.2,<2"
+pystac-client = ">=0.9.0,<0.10"
+zarr = ">=3.4.0,<4"
+s3fs = ">=2026.9.0,<2027"
 # --- replace/extend with the deps your replication needs ---
 # Examples (uncomment as needed):
 # statsmodels = "*"          # GLM/GLMM regression

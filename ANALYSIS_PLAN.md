@@ -262,3 +262,19 @@ Test 4's pre-registered window (25 Dec 2017 – 1 Jan 2022) includes the first n
 - Sentinel-2 L2A scenes (Element84 Earth Search STAC) with at least 90% clear sky over a 2 km × 2 km box centred on GNSS1, from 10 Dec 2021 to 25 Jan 2022.
 - NDWI = (B03 − B08) / (B03 + B08). Fraction of box pixels with NDWI > 0.25, the meltwater threshold on ice of Yang & Smith 2013.
 - Reported: the fraction per scene. "Surface water detected in Period I" if the fraction on a Period I scene (20–25 Dec) is at least twice the fraction on the clear scene before (≤ 19 Dec) and above 1%.
+
+### 2026-10-07: B-melt operational detail (before any AMSR value was seen)
+
+The AMSR 10 km file has four flags: ascending and descending passes, each "filter" and "raw". Daily melt = 1 if either filtered flag is 1, NaN if both are missing. SSM/I has a single flag, which is used as is. The "December–January melt days" test needs at least 55 days per season.
+
+### 2026-10-07: B-temp access (before the ERA5 values were seen)
+
+A single CDS request for all years exceeded the CDS cost limit, and yearly requests were slow (about 2.5 min each in the queue). ERA5 is instead read from ECMWF's ARCO Zarr store (geo-chunked, CDS key as Bearer token) at the grid cell nearest GNSS1. Variable, months and years are unchanged; the 0.25° box became the single nearest cell, as the test specified.
+
+### 2026-10-07: B-optical duplicate scenes (written after seeing the results)
+
+The STAC search returns reprocessed duplicates of the same acquisitions. One item per acquisition is kept, the one with the latest processing baseline. The 20 Dec duplicates give water fractions of 0.042 and 0.032. Both satisfy the pre-registered rule against 13 Dec (≈0.007), so the label does not depend on this choice.
+
+### 2026-10-07: B-temp ERA5 inhomogeneity (written AFTER seeing the ERA5 results)
+
+The pre-registered ERA5 trend test gives p = 0.03 ("not replicated"), and that label stands. ERA5 PDD at the cell nearest GNSS1 drops in steps after 2007 (seasonal means 24.6 → 3.5 °C d between halves). ECMWF's ERA5 documentation records that SST/sea-ice forcing came from HadISST2 before September 2007 and from OSTIA after. A post-hoc row splits the record there and compares it with JMA Syowa over the same seasons. A second post-hoc row reports ERA5 against the deposit's on-glacier AWS during the field season.

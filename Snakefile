@@ -84,11 +84,15 @@ rule figures:
 # ---------- 05: Replication (Arm B, independent data; ANALYSIS_PLAN.md § Arm B) ----------
 rule replication:
     input:
+        f"{DATA}/raw/sources.json",          # ERA5, melt flags, ITS_LIVE, Sentinel-2 are read from data/raw
         f"{DATA}/clean/jma_syowa_daily.parquet",
         f"{RESULTS}/pressure_sensitivity.csv",
+        f"{RESULTS}/gnss_tracks.nc",
     output:
         f"{RESULTS}/arm_b_table.csv",
         f"{RESULTS}/jma_rain_events.csv",
+        f"{RESULTS}/itslive_pairs.csv",
+        f"{RESULTS}/s2_scenes.csv",
     log:
         f"{RESULTS}/logs/05_replication.log",
     shell:
