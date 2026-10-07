@@ -160,3 +160,35 @@ This confirms the §1 smoother. It also establishes from the published figure it
 - Primary: h = 12 h. At h = 1 h the floating GNSS2 will also carry tidal motion; reported, not labelled.
 
 **C6, timing.** Δt = time of the GNSS1 Period II speed peak (observed-only) minus the BH2201 pressure peak (3 Jan 23:07 UTC, from C2). Reproduced if |Δt| ≤ 24 h at h = 12 h. Δt is also reported for every bandwidth and for GNSS2.
+
+---
+
+# Arm B (replication with independent data)
+
+Each Arm B test is pre-registered here before its data are downloaded in full. Labels: **replicated**, **partially replicated**, **not replicated**. Amendments follow the same rules as Arm A.
+
+## B-rain: rain frequency at Syowa (C9), pre-registered 2026-10-07
+
+**Why.** The seven rain events behind "Liquid precipitation has been reported seven times since December 1989" are hard-coded in `fig_s3.m`, as summer years 1991, 1996, 2004, 2009, 2013, 2018 and 2022. No rain record is deposited. Arm A could only check that the text matches this list.
+
+**Source.** Japan Meteorological Agency, past weather data for Syowa (station 89532): monthly daily-value pages (`daily_s1.php?prec_no=99&block_no=89532`). For each day the page gives a daytime (06–18) and night-time (18–06) weather summary (天気概況). Times are Syowa local time (UTC+3), and days are counted in local time. Syowa has no precipitation-amount record, so the summaries are the only rain record. Scope: every month from December 1989 to March 2026. Fetch politely (one request per second) and cache in `data/raw/jma/`.
+
+**Only inspected before this plan:** the pages for 1989-12, 1991-01, 2017-12 and 2022-01, to learn the layout. December 1989 has no summaries.
+
+**Definitions.**
+- **Rain day:** a day whose daytime or night-time summary contains 雨 (rain, including 霧雨, drizzle). This is the primary definition.
+- **Sleet-only day:** contains みぞれ (sleet) but not 雨. Used for the sensitivity case "rain or sleet".
+- **Rain event:** rain days separated by at most 2 days, merged into one event.
+- **Season:** July–June, labelled by the year of its January (2017/18 → 2018), as in `fig_s3.m`.
+- **Coverage:** a month counts as covered if at least 90% of its days have a summary. Report months without coverage. A season counts as covered if its December–February is covered.
+
+**Tests and decision rules** (primary definition; sensitivity reported alongside):
+1. **Which seasons had rain.**
+   - Replicated if the covered seasons with at least one rain event are exactly the authors' seven, restricted to covered seasons.
+   - Partially replicated if at least 5 of the authors' covered seasons have a rain event, or if the number of rain seasons is within ±2 of the authors' covered count.
+   - Otherwise not replicated.
+2. **"Approximately every five years."** Mean interval between consecutive rain seasons of 4–6 years.
+3. **No significant trend in frequency.** Poisson regression of rain events per covered season on season year: p ≥ 0.05.
+4. **"The last recorded rain at Syowa Station was in December 2017"** before 2 January 2022: no rain day between 25 Dec 2017 and 1 Jan 2022.
+
+The JMA record is derived from the same station observations the authors cite. It is independent of the authors' extraction, not of the observing system.

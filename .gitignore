@@ -67,3 +67,6 @@ claude-resume.txt
 
 # Regenerable intermediate arrays (rebuilt by the pipeline)
 results/*.nc
+
+# Regenerated pipeline logs
+results/logs/
