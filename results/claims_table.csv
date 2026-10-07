@@ -36,3 +36,10 @@ C4,Period II uplift GNSS1 (h = 12 h),pre-registered,~10 mm (3–5 Jan),10 mm,0�
 C4,"GNSS2 vertical range, Period I (h = 12 h)",pre-registered,no noticeable displacement,3 mm (data from 23 Dec 15:00),< 20 mm,within tolerance,h = 1 h: 30 mm (tidal motion of floating ice not smoothed out)
 C4,overall,pre-registered,"uplift ~0.1 m at GNSS1, none at GNSS2",see items,all items,reproduced,"h=1: obs 153, spline 151, PII 34, GNSS2 30 mm; h=3: obs 141, spline 142, PII 25, GNSS2 13 mm; h=6: obs 140, spline 144, PII 16, GNSS2 6 mm; h=12: obs 126, spline 128, PII 10, GNSS2 3 mm"
 C6,GNSS1 speed peak minus BH2201 pressure peak (h = 12 h),pre-registered,broadly coincided,"-2 h (speed peak 2022-01-03 21:20, pressure peak 2022-01-03 23:07 UTC)",|Δt| ≤ 24 h,reproduced,GNSS1 h=1: -13 h; GNSS1 h=3: -3 h; GNSS1 h=6: -3 h; GNSS1 h=12: -2 h; GNSS2 h=1: -13 h; GNSS2 h=3: -15 h; GNSS2 h=6: -1 h; GNSS2 h=12: -5 h
+C9,PDD 2021/22 (deposit),pre-registered,10.6 °C d,10.6 °C d,±0.1,reproduced,
+C9,mean PDD 1989/90–2025/26 (deposit),pre-registered,18.2 °C d,18.18 °C d,±0.1,reproduced,
+C9,2021/22 PDD relative to the mean,pre-registered,40% smaller,42% smaller,—,reported,
+C9,"trend in PDD, 1989/90–2025/26",pre-registered,no significant trend,"OLS slope -0.98 °C d per decade, p = 0.65",p ≥ 0.05,reproduced,"Spearman ρ = -0.05, p = 0.79"
+C9,"trend in Dec–Jan mean temperature, 1989/90–2025/26",pre-registered,no significant trend,"OLS slope -0.06 °C per decade, p = 0.58",p ≥ 0.05,reproduced,"Spearman ρ = -0.09, p = 0.59"
+C9,rain on 2 January 2022 (on-glacier AWS),post hoc,approximately 30 mm,29.8 mm,±3 mm,reproduced,"other days > 1 mm: 01 Jan 1.2 mm, 17 Jan 7.0 mm"
+C9,rain events since December 1989,pre-registered,seven; about every five years,"7 lines in fig_s3.m; mean interval 5.2 years (range 4–8); 3 up to 2008, 4 after",—,reported,"events hard-coded in the code, no record deposited: verified in Arm B (JMA)"

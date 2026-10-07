@@ -1,13 +1,10 @@
-# Snakefile — orchestrates the replication pipeline end-to-end.
+# Snakefile: runs the Arm A reproduction end to end.
 #
-# Replace the placeholder rules with your actual replication steps. The
-# canonical pattern is one rule per pipeline stage, and each rule wraps a
-# notebook executed via jupytext (so the notebook stays the source of truth
-# and the Snakefile just sequences them).
+# Each rule executes one jupytext notebook, so the notebook stays the source of truth.
 #
 # Usage:
-#   snakemake --cores 1                  # run everything
-#   snakemake --cores 1 -n               # dry run
+#   pixi run snakemake --cores 1         # run everything
+#   pixi run snakemake --cores 1 -n      # dry run
 
 NOTEBOOKS = "notebooks"
 DATA = "data"
@@ -15,50 +12,66 @@ RESULTS = "results"
 FIGURES = "figures"
 
 
+def execute(nb):
+    return f"cd {NOTEBOOKS} && jupytext --to notebook --execute {nb} 2>&1 | tee ../{{log}}"
+
+
 rule all:
     input:
-        # Replace with your actual final artefacts:
         f"{FIGURES}/main_result.png",
-        f"{RESULTS}/summary.csv",
+        f"{FIGURES}/sensitivity_c3.png",
+        f"{RESULTS}/claims_table.csv",
 
 
-# ---------- 01: Data download ----------
-# Every replication MUST be self-contained: data is downloaded by the notebook,
-# never assumed to exist locally. See CLAUDE.md § Self-contained data.
+# ---------- 01: Data download (Mendeley deposit, checksums verified; IOC tide in UTC) ----------
 rule data_download:
     output:
         f"{DATA}/raw/sources.json",
     log:
         f"{RESULTS}/logs/01_data_download.log",
     shell:
-        f"cd {{NOTEBOOKS}} && jupytext --to notebook --execute 01_data_download.py 2>&1 | tee ../{{log}}"
+        execute("01_data_download.py")
 
 
-# ---------- 02: Data clean ----------
+# ---------- 02: Data clean (tidy NetCDF) ----------
 rule data_clean:
     input:
         f"{DATA}/raw/sources.json",
     output:
-        f"{DATA}/clean/dataset.parquet",
+        expand(f"{DATA}/clean/{{name}}.nc", name=["gnss_GNSS1", "gnss_GNSS2", "pressure_BH2201",
+               "pressure_BH2202", "pressure_BH2203", "tide", "aws", "syowa_temperature"]),
+    log:
+        f"{RESULTS}/logs/02_data_clean.log",
     shell:
-        f"cd {{NOTEBOOKS}} && jupytext --to notebook --execute 02_data_clean.py"
+        execute("02_data_clean.py")
 
 
-# ---------- 03: Analysis ----------
+# ---------- 03: Analysis (claims C1-C4, C6-C9 against ANALYSIS_PLAN.md) ----------
 rule analysis:
     input:
-        f"{DATA}/clean/dataset.parquet",
+        rules.data_clean.output,
+        f"{NOTEBOOKS}/gnss.py",
     output:
-        f"{RESULTS}/summary.csv",
+        f"{RESULTS}/claims_table.csv",
+        f"{RESULTS}/sensitivity_c3.csv",
+        f"{RESULTS}/water_levels.nc",
+        f"{RESULTS}/gnss_tracks.nc",
+    log:
+        f"{RESULTS}/logs/03_analysis.log",
     shell:
-        f"cd {{NOTEBOOKS}} && jupytext --to notebook --execute 03_analysis.py"
+        execute("03_analysis.py")
 
 
 # ---------- 04: Figures ----------
 rule figures:
     input:
-        f"{RESULTS}/summary.csv",
+        f"{RESULTS}/sensitivity_c3.csv",
+        f"{RESULTS}/water_levels.nc",
+        f"{RESULTS}/gnss_tracks.nc",
     output:
         f"{FIGURES}/main_result.png",
+        f"{FIGURES}/sensitivity_c3.png",
+    log:
+        f"{RESULTS}/logs/04_figures.log",
     shell:
-        f"cd {{NOTEBOOKS}} && jupytext --to notebook --execute 04_figures.py"
+        execute("04_figures.py")

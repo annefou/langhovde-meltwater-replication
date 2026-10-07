@@ -599,8 +599,62 @@ record("C6", "GNSS1 speed peak minus BH2201 pressure peak (h = 12 h)", "broadly 
        "reproduced" if c6_ok and all(others) else ("partially reproduced" if c6_ok or any(others) else "not reproduced"),
        "; ".join(f"{st} h={h}: {dts[st, h][0]:+.0f} h" for st in STATIONS for h in BANDWIDTHS))
 
-xr.Dataset({f"{k}_{st}_h{h}": tracks[st, h][k].rename({"time": f"time_{st}_h{h}"})
-            for st in STATIONS for h in BANDWIDTHS for k in ("speed", "uplift")}).to_netcdf(RESULTS_DIR / "gnss_tracks.nc")
+export = {f"{k}_{st}_h{h}": tracks[st, h][k].rename({"time": f"time_{st}_h{h}"})
+          for st in STATIONS for h in BANDWIDTHS for k in ("speed", "uplift")}
+export |= {f"{k}_{st}_h12_spline": filled[st, 12][k].rename({"time": f"time_{st}_h12_spline"})
+           for st in STATIONS for k in ("speed", "uplift", "observed")}
+xr.Dataset(export).to_netcdf(RESULTS_DIR / "gnss_tracks.nc")
+
+# %% [markdown]
+# ## 7. C9: summer climate context at Syowa
+#
+# PDD as in `figS3/fig_s3.m`: the sum of positive daily mean temperatures over
+# December–January, one value per summer (season = year of the January). The seven
+# rain events in SI Fig. 3 are hard-coded in `fig_s3.m` as vertical lines; the deposit
+# has no rain record behind them. They are checked against JMA weather summaries in
+# Arm B.
+
+# %%
+from scipy import stats  # noqa: E402
+
+sy = xr.open_dataset(CLEAN_DIR / "syowa_temperature.nc").to_dataframe()
+by = sy.groupby("season")
+pdd = by.t_mean.apply(lambda v: v.clip(lower=0).sum())
+tmean = by.t_mean.mean()
+p22, pmean = float(pdd.loc[2022]), float(pdd.mean())
+record("C9", "PDD 2021/22 (deposit)", "10.6 °C d", f"{p22:.1f} °C d", "±0.1", "reproduced" if within(p22, 10.6, 0.1)
+       else "not reproduced")
+record("C9", "mean PDD 1989/90–2025/26 (deposit)", "18.2 °C d", f"{pmean:.2f} °C d", "±0.1",
+       "reproduced" if within(pmean, 18.2, 0.1) else "not reproduced")
+record("C9", "2021/22 PDD relative to the mean", "40% smaller", f"{100 * (1 - p22 / pmean):.0f}% smaller", "—",
+       "reported")
+
+trend = {}
+for name, v in [("PDD", pdd), ("Dec–Jan mean temperature", tmean)]:
+    lr = stats.linregress(v.index.to_numpy(float), v.to_numpy())
+    rho = stats.spearmanr(v.index, v.to_numpy())
+    trend[name] = (lr.slope, lr.pvalue)
+    unit = "°C d" if name == "PDD" else "°C"
+    record("C9", f"trend in {name}, 1989/90–2025/26", "no significant trend",
+           f"OLS slope {lr.slope * 10:+.2f} {unit} per decade, p = {lr.pvalue:.2f}", "p ≥ 0.05",
+           "reproduced" if lr.pvalue >= 0.05 else "not reproduced", f"Spearman ρ = {rho.statistic:+.2f}, p = {rho.pvalue:.2f}")
+
+# On-glacier AWS: rain_accum counts since the last 00:00; the 00:00 record closes the previous day.
+ra = xr.open_dataset(CLEAN_DIR / "aws.nc").rain_accum.to_series()
+rain_daily = ra.groupby((ra.index - pd.Timedelta("1min")).floor("D")).max()
+r2 = float(rain_daily.loc["2022-01-02"])
+record("C9", "rain on 2 January 2022 (on-glacier AWS)", "approximately 30 mm", f"{r2:.1f} mm", "±3 mm",
+       "reproduced" if within(r2, 30, 3) else "not reproduced",
+       f"other days > 1 mm: {', '.join(f'{d:%d %b} {v:.1f} mm' for d, v in rain_daily[rain_daily > 1].items() if d != pd.Timestamp('2022-01-02'))}",
+       basis="post hoc")
+
+RAIN_SEASONS = [1991, 1996, 2004, 2009, 2013, 2018, 2022]          # hard-coded in fig_s3.m
+gaps_y = np.diff(RAIN_SEASONS)
+half = int(np.median(pdd.index))
+record("C9", "rain events since December 1989", "seven; about every five years",
+       f"{len(RAIN_SEASONS)} lines in fig_s3.m; mean interval {gaps_y.mean():.1f} years (range {gaps_y.min()}–{gaps_y.max()}); "
+       f"{sum(y <= half for y in RAIN_SEASONS)} up to {half}, {sum(y > half for y in RAIN_SEASONS)} after",
+       "—", "reported", "events hard-coded in the code, no record deposited: verified in Arm B (JMA)")
 
 # %% [markdown]
 # ## Persist results
