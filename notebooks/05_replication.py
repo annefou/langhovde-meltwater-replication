@@ -329,17 +329,31 @@ record("B-temp", "ERA5 daily maximum at the glacier, Periods I and II", "about 5
 # 10 km cell mixes glacier, rock and sea ice.
 
 # %%
+AMSR_PASSES = ["snow_status_wet_dry_19H_ASC_filter", "snow_status_wet_dry_19H_DSC_filter"]
+
+
 def melt_series(path: Path, var: str = "melt") -> tuple[pd.Series, str]:
+    """Daily melt flag at the valid cell nearest GNSS1.
+
+    The cell is chosen from one date, and only that cell's time series is read: the
+    full AMSR grid (9000 days x 500 x 580) would not fit in a CI runner's memory.
+    For AMSR, melt = 1 if either filtered pass flags it, NaN if both are missing.
+    """
     ds = xr.open_dataset(path)
-    if var not in ds:                                     # AMSR: either filtered pass flags melt
-        a, d = ds["snow_status_wet_dry_19H_ASC_filter"], ds["snow_status_wet_dry_19H_DSC_filter"]
-        ds[var] = xr.where(a.isnull() & d.isnull(), np.nan, np.fmax(a.fillna(0), d.fillna(0)))
+    flags = [var] if var in ds else AMSR_PASSES
     lat, lon = ds["lat"].values, ds["lon"].values
-    valid = np.isfinite(ds[var].sel(time="2021-12-15", method="nearest").values)
+    day = ds[flags[0]].sel(time="2021-12-15", method="nearest")
+    valid = np.any([np.isfinite(ds[f].sel(time=day.time).values) for f in flags], axis=0)
     d = np.hypot((lat - GNSS1_LATLON[0]) * 111, (lon - GNSS1_LATLON[1]) * 111 * np.cos(np.deg2rad(lat)))
     d[~valid] = np.inf
     iy, ix = np.unravel_index(np.argmin(d), d.shape)
-    sr = ds[var].isel({ds[var].dims[1]: iy, ds[var].dims[2]: ix}).to_series()
+    ydim, xdim = ds[flags[0]].dims[1], ds[flags[0]].dims[2]
+    cols = [ds[f].isel({ydim: iy, xdim: ix}).load() for f in flags]
+    if len(cols) == 1:
+        sr = cols[0].to_series()
+    else:
+        a, b = cols
+        sr = xr.where(a.isnull() & b.isnull(), np.nan, np.fmax(a.fillna(0), b.fillna(0))).to_series()
     return sr, f"cell centre {lat[iy, ix]:.3f}°, {lon[iy, ix]:.3f}°, {d[iy, ix]:.1f} km from GNSS1"
 
 
