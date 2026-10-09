@@ -3,10 +3,10 @@ title: "langhovde-meltwater-replication"
 message: "If you use this software, please cite it as below."
 type: software
 authors:
-  - family-names: "Fouilloux"
-    given-names: "Anne"
-    orcid: "https://orcid.org/0000-0002-1784-2920"
-    affiliation: "LifeWatch ERIC"
+- family-names: "Fouilloux"
+  given-names: "Anne"
+  orcid: "https://orcid.org/0000-0002-1784-2920"
+  affiliation: "LifeWatch ERIC"
 repository-code: "https://github.com/annefou/langhovde-meltwater-replication"
 license: MIT
 version: "1.0.2"
@@ -23,72 +23,75 @@ date-released: "2026-10-09"
 # named was gone and "edit by hand" was the only path left. Two repos built from
 # this template then recorded the version DOI two different ways — one a
 # structured identifier, one a prose comment. Hence the automation.)
-doi: "{{ZENODO_DOI}}"
+doi: "10.5281/zenodo.23257924"
 identifiers:
-  - type: doi
-    value: "{{ZENODO_DOI}}"
-    description: "Concept DOI (resolves to the latest version) — cite the project"
-  # On release, the workflow adds:
-  #   - type: doi   value: <version DOI>  "Version DOI for vX.Y.Z — pins this exact release; cite this from nanopubs"
-  #   - type: swh   value: swh:1:rev:<commit>;origin=<repo>  "Software Heritage ID of the vX.Y.Z source tree"
+- type: doi
+  value: 10.5281/zenodo.23257924
+  description: Concept DOI (resolves to the latest version) — cite the project
+- type: doi
+  value: 10.5281/zenodo.23257925
+  description: Version DOI for v1.0.2 — pins this exact release; cite this from nanopubs
+- type: swh
+  value: swh:1:rev:16d4cc2e6ed8facd5b814eebfa3aa985b50e0066;origin=https://github.com/annefou/langhovde-meltwater-replication
+  description: Software Heritage ID of the v1.0.2 source tree
 keywords:
-  - replication
-  - reproducibility
-  - FORRT
-  - nanopublication
-  - Science-Live
-  - glaciology
-  - Antarctica
-  - Langhovde Glacier
-  - meltwater
-  - subglacial hydrology
-  - GNSS
+- replication
+- reproducibility
+- FORRT
+- nanopublication
+- Science-Live
+- glaciology
+- Antarctica
+- Langhovde Glacier
+- meltwater
+- subglacial hydrology
+- GNSS
 references:
-  - type: article
-    title: "Acceleration of an Antarctic outlet glacier driven by surface meltwater input to the base"
-    authors:
-      - family-names: "Sugiyama"
-        given-names: "Shin"
-      - family-names: "Kondo"
-        given-names: "Ken"
-      - family-names: "Minowa"
-        given-names: "Masahiro"
-      - family-names: "Watanabe"
-        given-names: "Akira"
-    journal: "Nature Communications"
-    volume: 17
-    start: 6102
-    year: 2026
-    doi: "10.1038/s41467-026-72724-x"
-  - type: dataset
-    title: "Field data from Langhovde Glacier and MATLAB code for plotting"
-    authors:
-      - family-names: "Sugiyama"
-        given-names: "Shin"
-      - family-names: "Kondo"
-        given-names: "Ken"
-      - family-names: "Minowa"
-        given-names: "Masahiro"
-      - family-names: "Watanabe"
-        given-names: "Akira"
-    publisher:
-      name: "Mendeley Data"
-    year: 2026
-    doi: "10.17632/8wvtxg53ry.1"
-  - type: dataset
-    title: "merged ERA5-MERRA-2 Atmospheric River catalogs at Staffed Antarctic Stations"
-    authors:
-      - family-names: "Favier"
-        given-names: "Vincent"
-    publisher:
-      name: "Zenodo"
-    year: 2025
-    doi: "10.5281/zenodo.17165410"
-  - type: dataset
-    title: "ERA5 hourly data on single levels from 1940 to present"
-    authors:
-      - name: "Copernicus Climate Change Service"
-    publisher:
-      name: "ECMWF"
-    year: 2018
-    doi: "10.24381/cds.adbb2d47"
+- type: article
+  title: "Acceleration of an Antarctic outlet glacier driven by surface meltwater input to the base"
+  authors:
+  - family-names: "Sugiyama"
+    given-names: "Shin"
+  - family-names: "Kondo"
+    given-names: "Ken"
+  - family-names: "Minowa"
+    given-names: "Masahiro"
+  - family-names: "Watanabe"
+    given-names: "Akira"
+  journal: "Nature Communications"
+  volume: 17
+  start: 6102
+  year: 2026
+  doi: "10.1038/s41467-026-72724-x"
+- type: dataset
+  title: "Field data from Langhovde Glacier and MATLAB code for plotting"
+  authors:
+  - family-names: "Sugiyama"
+    given-names: "Shin"
+  - family-names: "Kondo"
+    given-names: "Ken"
+  - family-names: "Minowa"
+    given-names: "Masahiro"
+  - family-names: "Watanabe"
+    given-names: "Akira"
+  publisher:
+    name: "Mendeley Data"
+  year: 2026
+  doi: "10.17632/8wvtxg53ry.1"
+- type: dataset
+  title: "merged ERA5-MERRA-2 Atmospheric River catalogs at Staffed Antarctic Stations"
+  authors:
+  - family-names: "Favier"
+    given-names: "Vincent"
+  publisher:
+    name: "Zenodo"
+  year: 2025
+  doi: "10.5281/zenodo.17165410"
+- type: dataset
+  title: "ERA5 hourly data on single levels from 1940 to present"
+  authors:
+  - name: "Copernicus Climate Change Service"
+  publisher:
+    name: "ECMWF"
+  year: 2018
+  doi: "10.24381/cds.adbb2d47"

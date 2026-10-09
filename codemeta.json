@@ -8,8 +8,12 @@
   "dateModified": "2026-10-09",
   "license": "https://spdx.org/licenses/MIT",
   "codeRepository": "https://github.com/annefou/langhovde-meltwater-replication",
-  "identifier": "{{ZENODO_DOI}}",
-  "@id": "{{ZENODO_DOI}}",
+  "identifier": [
+    "https://doi.org/10.5281/zenodo.23257924",
+    "https://doi.org/10.5281/zenodo.23257925",
+    "swh:1:rev:16d4cc2e6ed8facd5b814eebfa3aa985b50e0066;origin=https://github.com/annefou/langhovde-meltwater-replication"
+  ],
+  "@id": "https://doi.org/10.5281/zenodo.23257924",
   "programmingLanguage": {
     "@type": "ComputerLanguage",
     "name": "Python",
