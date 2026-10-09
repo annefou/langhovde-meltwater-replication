@@ -26,6 +26,8 @@ rule all:
 
 # ---------- 01: Data download (Mendeley deposit, checksums verified; IOC tide in UTC) ----------
 rule data_download:
+    input:
+        f"{NOTEBOOKS}/01_data_download.py",   # re-run when the notebook changes (e.g. new sources)
     output:
         f"{DATA}/raw/sources.json",
     log:
@@ -37,6 +39,7 @@ rule data_download:
 # ---------- 02: Data clean (tidy NetCDF) ----------
 rule data_clean:
     input:
+        f"{NOTEBOOKS}/02_data_clean.py",
         f"{DATA}/raw/sources.json",
     output:
         expand(f"{DATA}/clean/{{name}}.nc", name=["gnss_GNSS1", "gnss_GNSS2", "pressure_BH2201",
@@ -53,6 +56,7 @@ rule data_clean:
 # ---------- 03: Analysis (claims C1-C4, C6-C9 against ANALYSIS_PLAN.md) ----------
 rule analysis:
     input:
+        f"{NOTEBOOKS}/03_analysis.py",
         rules.data_clean.output,
         f"{NOTEBOOKS}/gnss.py",
     output:
@@ -70,6 +74,7 @@ rule analysis:
 # ---------- 04: Figures ----------
 rule figures:
     input:
+        f"{NOTEBOOKS}/04_figures.py",
         f"{RESULTS}/sensitivity_c3.csv",
         f"{RESULTS}/water_levels.nc",
         f"{RESULTS}/gnss_tracks.nc",
@@ -85,6 +90,7 @@ rule figures:
 # ---------- 05: Replication (Arm B, independent data; ANALYSIS_PLAN.md § Arm B) ----------
 rule replication:
     input:
+        f"{NOTEBOOKS}/05_replication.py",
         f"{DATA}/raw/sources.json",          # ERA5, melt flags, ITS_LIVE, Sentinel-2 are read from data/raw
         f"{DATA}/clean/jma_syowa_daily.parquet",
         f"{DATA}/clean/isd_syowa_ww.parquet",

@@ -99,7 +99,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: data/raw
-          key: input-data-v1
+          key: input-data-v2
 
       - name: Run pipeline
         if: steps.guard.outputs.ready == 'true'
