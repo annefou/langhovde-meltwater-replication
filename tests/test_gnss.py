@@ -118,8 +118,15 @@ def test_spline_fill_bridges_gap_of_constant_velocity_track():
 
 @pytest.fixture(scope="module")
 def deposit() -> Path:
+    """The Mendeley deposit only: run 01_data_download.py up to its first non-deposit section.
+
+    The full notebook also fetches the Arm B data (hundreds of JMA pages, cloud stores),
+    which this test does not need.
+    """
     if not (FIG3 / "fig3.eps").exists():
-        subprocess.run([sys.executable, "01_data_download.py"], cwd=ROOT / "notebooks", check=True)
+        src = (ROOT / "notebooks" / "01_data_download.py").read_text()
+        src = src[: src.index("# ## Syowa tide gauge in UTC")]
+        subprocess.run([sys.executable, "-c", src], cwd=ROOT / "notebooks", check=True)
     return FIG3
 
 

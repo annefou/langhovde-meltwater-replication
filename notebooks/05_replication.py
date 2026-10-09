@@ -22,6 +22,7 @@
 # not replicated.
 
 # %%
+import re
 from pathlib import Path
 
 import numpy as np
@@ -88,10 +89,42 @@ def events(flag: pd.Series) -> pd.DataFrame:
                                       f"{a} / {b}" for a, b in zip(s, d.loc[s.index, "summary_night"]))))
 
 
+# English gloss of the JMA weather summaries (天気概況). Translated term by term from a fixed
+# glossary of JMA weather vocabulary; any term not in it is kept and marked [?…] rather than guessed.
+# JMA grammar: "A一時B" = A, briefly B; "A時々B" = A, at times B; "A後B" = A, later B.
+GLOSSARY = {
+    "地ふぶき": "drifting snow", "ふぶき": "blizzard", "霧雨": "drizzle", "みぞれ": "sleet", "あられ": "snow pellets",
+    "ひょう": "hail", "快晴": "fine", "薄曇": "thin cloud", "晴": "clear", "曇": "cloudy", "雨": "rain", "雪": "snow",
+    "霧": "fog", "もや": "mist", "大風": "strong wind", "雷": "thunder", "一時": ", briefly", "時々": ", at times",
+    "後一時": ", later briefly", "後時々": ", later at times", "後": ", later", "、": "; ", "を伴う": "",
+}
+_TERMS = sorted(GLOSSARY, key=len, reverse=True)
+
+
+def gloss(text: str) -> str:
+    out, i = [], 0
+    text = re.sub(r"([^、\s/|]+)を伴う", lambda m: "with " + m.group(1), text)   # "、Xを伴う" = "; with X"
+    while i < len(text):
+        term = next((t for t in _TERMS if text.startswith(t, i)), None)
+        if term:
+            out.append(GLOSSARY[term] if out or not GLOSSARY[term].startswith(",") else GLOSSARY[term][2:])
+            i += len(term)
+        elif text[i] in " /|" or text[i].isascii():
+            out.append(text[i])
+            i += 1
+        else:
+            out.append(f"[?{text[i]}]")
+            i += 1
+    g = re.sub(r"(?<=[a-z])(?=[a-z])", "", "".join(out))
+    return re.sub(r"\s+", " ", re.sub(r"(\w)(clear|cloudy|rain|snow|sleet|drizzle|blizzard|fog|thin|fine)", r"\1 \2", g)).strip()
+
+
 ev_rain = events(jma.rain)
 ev_wet = events(jma.rain | jma.sleet_only)
+ev_rain["summaries_en"] = ev_rain.summaries.map(gloss)
 ev_rain.to_csv(RESULTS_DIR / "jma_rain_events.csv", index=False)
-print(ev_rain[["start", "end", "season", "days", "summaries"]].to_string(index=False))
+print(ev_rain[["start", "end", "season", "days", "summaries_en"]].to_string(index=False))
+print("(original JMA wording in results/jma_rain_events.csv, column 'summaries')")
 
 # %% [markdown]
 # ### Tests 1–4

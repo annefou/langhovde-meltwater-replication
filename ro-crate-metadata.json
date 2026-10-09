@@ -16,7 +16,7 @@
       "@type": ["Dataset", "ResearchObject"],
       "name": "langhovde-meltwater-replication",
       "description": "FORRT reproduction and partial independent-data replication of Sugiyama et al. (2026, Nature Communications): meltwater-driven acceleration of grounded ice at Langhovde Glacier, East Antarctica.",
-      "datePublished": "2026-10-07",
+      "datePublished": "2026-10-09",
       "license": { "@id": "https://spdx.org/licenses/MIT" },
       "publisher": { "@id": "https://orcid.org/0000-0002-1784-2920" },
       "author": [{ "@id": "https://orcid.org/0000-0002-1784-2920" }],
