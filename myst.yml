@@ -17,7 +17,7 @@ project:
     - file: notebooks/05_replication.ipynb
     - file: ANALYSIS_PLAN.md
     - file: GAP_SOURCES.md
-    - file: nanopubs/README.md
+    - file: nanopubs/PUBLISHED.md
 site:
   title: "langhovde-meltwater-replication"
 # IMPORTANT: do NOT set base_url here — MyST silently ignores the key.
