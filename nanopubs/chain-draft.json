@@ -4,7 +4,7 @@
   "chain_shape": "paper-rooted",
   "source": {
     "repository": "https://github.com/annefou/langhovde-meltwater-replication",
-    "commit": "c1dbe70ff2d5f5812f49769d17fdb306c4205336",
+    "commit": "cc340d3b3ff20b3cbcc1607ca5abfd5653240c0e",
     "figure": "figures/main_result.png"
   },
   "steps": [
@@ -29,7 +29,7 @@
       "template_key": "AIDA_SENTENCE",
       "template_uri": "https://w3id.org/np/RALmXhDw3rHcMveTgbv8VtWxijUHwnSqhCmtJFIPKWVaA",
       "prefill": {
-        "aida": "Surface meltwater that reaches the bed of grounded Antarctic ice accelerates its flow.",
+        "aida": "Surface meltwater reaching the bed accelerated grounded ice at Langhovde Glacier, an outlet glacier in East Antarctica, in summer 2021/22.",
         "topic": [
           {
             "uri": "http://www.wikidata.org/entity/Q360925",

@@ -11,10 +11,10 @@
 
 Atomic, Independent, Declarative, Absolute. One empirical finding. Must end with a full stop.
 
-> Restates the paper's headline claim (the quote in `01_quote.md`) as one finding, at the paper's own scope ("in Antarctica"). The Outcome then judges that scope. Alternative at site scope, if Anne prefers: "Surface meltwater that reaches the glacier bed accelerated grounded ice at Langhovde Glacier in summer 2021/22." Single finding, no hedge.
+> Site scope, chosen by Anne on 2026-10-09. The finding the paper's evidence supports, and the claim the Study tests: Langhovde Glacier, summer 2021/22. The Quote keeps the paper's own wording ("in Antarctica"). A wider, Antarctic-scale statement would belong in a Research Synthesis across several sites.
 
 ```
-Surface meltwater that reaches the bed of grounded Antarctic ice accelerates its flow.
+Surface meltwater reaching the bed accelerated grounded ice at Langhovde Glacier, an outlet glacier in East Antarctica, in summer 2021/22.
 ```
 
 <!-- field: topic -->
