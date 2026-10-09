@@ -278,3 +278,15 @@ The STAC search returns reprocessed duplicates of the same acquisitions. One ite
 ### 2026-10-07: B-temp ERA5 inhomogeneity (written AFTER seeing the ERA5 results)
 
 The pre-registered ERA5 trend test gives p = 0.03 ("not replicated"), and that label stands. ERA5 PDD at the cell nearest GNSS1 drops in steps after 2007 (seasonal means 24.6 → 3.5 °C d between halves). ECMWF's ERA5 documentation records that SST/sea-ice forcing came from HadISST2 before September 2007 and from OSTIA after. A post-hoc row splits the record there and compares it with JMA Syowa over the same seasons. A second post-hoc row reports ERA5 against the deposit's on-glacier AWS during the field season.
+
+### 2026-10-09: B-rain cross-check with NOAA ISD WMO present-weather codes (post hoc; written after the JMA results, before any ISD summer data were examined)
+
+**Why.** JMA publishes the daily Syowa weather summaries only in Japanese. The same Syowa SYNOP reports are redistributed by NOAA's Integrated Surface Database (ISD, global-hourly, station 89532099999, NOAA open data on AWS), coded with WMO present-weather codes (`MW1`, "ww,quality"). They are an independent processing chain in an international, language-neutral format. The pre-registered B-rain labels (JMA) stand. ISD is reported as a cross-check.
+
+**Inspected before this amendment:** column names; the share of reports carrying MW1 (41% in 2022; SYNOP omits ww when there is no significant weather); and MW1 values in July 2022 only.
+
+**Definitions** (WMO code table 4677):
+- **Rain report:** ww in 50–67 (drizzle, rain, freezing drizzle or rain) or 80–82 (rain showers). Primary.
+- **Mixed report:** ww in 68, 69, 83 or 84 (rain or drizzle with snow), the counterpart of JMA's みぞれ (sleet). Used in the "rain or sleet" case.
+- **Days and events:** reports are grouped into Syowa local days (UTC+3), the same days as JMA. Events, seasons, coverage and tests 1–3 are the same as the pre-registered B-rain definitions. A season counts as covered if each of December, January and February has reports on at least 90% of its days.
+- **Agreement:** each JMA rain event is "confirmed" if ISD has a rain day within ±1 day. ISD events without a JMA event are listed.
