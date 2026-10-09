@@ -66,7 +66,7 @@ Reproduction (authors' data):
 - Tide: the authors' BH2203 correlation is repeated, then extended to the grounded boreholes with a 25 h high-pass filter and a lag scan. The clock of the tide file is checked against the IOC record of the same gauge.
 
 Replication (independent data, each test pre-registered before its data were downloaded):
-- Japan Meteorological Agency (JMA) Syowa daily weather summaries for rain frequency, 1990–2026;
+- Japan Meteorological Agency (JMA) Syowa daily weather summaries for rain frequency, 1990–2026, cross-checked against the same station's SYNOP reports in NOAA's Integrated Surface Database (WMO present-weather codes);
 - JMA hourly station pressure for the borehole correction;
 - JMA daily temperatures, and ERA5 2 m temperature from ECMWF's cloud-optimised archive, for the positive degree-day context;
 - passive-microwave melt flags (SSM/I 25 km, AMSR 10 km) and Sentinel-2 NDWI for surface melt;

@@ -241,6 +241,34 @@ SOURCES.append({
 print(f"JMA hourly: {len(list(JMA_H_DIR.glob('*.html')))} days cached")
 
 # %% [markdown]
+# ## NOAA ISD SYNOP reports for Syowa, 1989–2026 (Arm B, B-rain cross-check)
+#
+# NOAA Integrated Surface Database, global-hourly, station 89532099999 (Syowa), one CSV
+# per year from the NOAA open-data bucket on AWS. The reports are the same Syowa SYNOP
+# observations, with weather as WMO present-weather codes (`MW1`). NOAA open data.
+
+# %%
+ISD_DIR = RAW_DIR / "isd"
+ISD_DIR.mkdir(exist_ok=True)
+ISD_URL = "https://noaa-global-hourly-pds.s3.amazonaws.com/{y}/89532099999.csv"
+isd_missing = []
+for year in range(1989, 2027):
+    path = ISD_DIR / f"isd_89532099999_{year}.csv"
+    if not path.exists():
+        r = requests.get(ISD_URL.format(y=year), timeout=120)
+        if r.status_code == 404:                 # year not (yet) published by NOAA
+            isd_missing.append(year)
+            continue
+        r.raise_for_status()
+        path.write_bytes(r.content)
+if isd_missing:
+    print(f"ISD: no file published for {isd_missing}")
+SOURCES.append({"name": "NOAA ISD global-hourly, Syowa (89532099999), 1989-2026", "doi": None,
+                "url": ISD_URL.format(y="YYYY"), "license": "NOAA open data", "accessed_on": "2026-10-09",
+                "sha256": None})
+print(f"ISD: {len(list(ISD_DIR.glob('*.csv')))} yearly files")
+
+# %% [markdown]
 # ## Atmospheric-river days at Syowa (Arm B, B-AR)
 #
 # Favier (2025), merged ERA5–MERRA-2 AR catalogues at staffed Antarctic stations,

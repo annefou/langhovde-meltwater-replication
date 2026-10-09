@@ -43,6 +43,7 @@ rule data_clean:
                "pressure_BH2202", "pressure_BH2203", "tide", "aws", "syowa_temperature"]),
         f"{DATA}/clean/jma_syowa_daily.parquet",
         f"{DATA}/clean/jma_syowa_hourly.parquet",
+        f"{DATA}/clean/isd_syowa_ww.parquet",
     log:
         f"{RESULTS}/logs/02_data_clean.log",
     shell:
@@ -86,11 +87,13 @@ rule replication:
     input:
         f"{DATA}/raw/sources.json",          # ERA5, melt flags, ITS_LIVE, Sentinel-2 are read from data/raw
         f"{DATA}/clean/jma_syowa_daily.parquet",
+        f"{DATA}/clean/isd_syowa_ww.parquet",
         f"{RESULTS}/pressure_sensitivity.csv",
         f"{RESULTS}/gnss_tracks.nc",
     output:
         f"{RESULTS}/arm_b_table.csv",
         f"{RESULTS}/jma_rain_events.csv",
+        f"{RESULTS}/isd_rain_events.csv",
         f"{RESULTS}/itslive_pairs.csv",
         f"{RESULTS}/s2_scenes.csv",
     log:

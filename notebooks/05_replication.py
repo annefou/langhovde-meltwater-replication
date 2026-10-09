@@ -171,6 +171,99 @@ record("B-rain", "no rain between December 2017 and 2 January 2022",
        "no rain days" if between.empty else f"{len(between)} rain days: {', '.join(between.date.dt.strftime('%Y-%m-%d'))}",
        "no rain day 25 Dec 2017 – 1 Jan 2022", "replicated" if between.empty else "not replicated")
 
+# %% [markdown]
+# ### Cross-check: NOAA ISD WMO present-weather codes (post hoc, `ANALYSIS_PLAN.md` § Amendments)
+#
+# The same Syowa SYNOP reports, as redistributed by NOAA, coded with WMO present-weather
+# codes (table 4677) rather than Japanese text. Reports are grouped into Syowa local days
+# (UTC+3). The definitions of events, seasons and coverage are those of B-rain.
+
+# %%
+WW_RAIN = set(range(50, 68)) | {80, 81, 82}
+WW_MIXED = {68, 69, 83, 84}
+WW_LABEL = {**{c: "drizzle" for c in range(50, 56)}, 56: "freezing drizzle", 57: "freezing drizzle",
+            58: "drizzle and rain", 59: "drizzle and rain", **{c: "rain" for c in range(60, 66)},
+            66: "freezing rain", 67: "freezing rain", 68: "rain or drizzle and snow", 69: "rain or drizzle and snow",
+            80: "rain showers", 81: "rain showers", 82: "rain showers", 83: "rain and snow showers",
+            84: "rain and snow showers"}
+
+isd = pd.read_parquet(CLEAN_DIR / "isd_syowa_ww.parquet")
+isd["day"] = (isd.time + pd.Timedelta(hours=3)).dt.floor("D")
+by_day = isd.groupby("day").agg(n=("time", "size"), rain=("ww", lambda w: w.isin(WW_RAIN).any()),
+                                mixed=("ww", lambda w: w.isin(WW_MIXED).any()),
+                                codes=("ww", lambda w: sorted({int(c) for c in w.dropna() if c in WW_RAIN | WW_MIXED})))
+all_days = pd.date_range(by_day.index.min(), by_day.index.max(), freq="D")
+cov_isd = pd.Series(all_days.isin(by_day.index), index=all_days).groupby(all_days.to_period("M")).mean()
+
+
+def isd_covered(season: int) -> bool:
+    need = [pd.Period(f"{season - 1}-12", "M"), pd.Period(f"{season}-01", "M"), pd.Period(f"{season}-02", "M")]
+    return all(cov_isd.get(p, 0) >= 0.9 for p in need)
+
+
+def isd_events(flag: pd.Series) -> pd.DataFrame:
+    d = by_day[flag].reset_index().rename(columns={"day": "date"})
+    d["event"] = (d.date.diff().dt.days.fillna(99) > 3).cumsum()
+    d["season"] = np.where(d.date.dt.month >= 7, d.date.dt.year + 1, d.date.dt.year)
+    return d.groupby("event").agg(start=("date", "min"), end=("date", "max"), season=("season", "first"),
+                                  codes=("codes", lambda c: sorted({x for cc in c for x in cc})))
+
+
+ev_isd = isd_events(by_day.rain)
+ev_isd["weather_en"] = ev_isd.codes.map(lambda cs: ", ".join(f"{WW_LABEL[c]} ({c})" for c in cs))
+ev_isd.to_csv(RESULTS_DIR / "isd_rain_events.csv", index=False)
+isd_cov = [s for s in sorted(set(np.where(all_days.month >= 7, all_days.year + 1, all_days.year))) if isd_covered(s)]
+print(f"ISD covered seasons: {len(isd_cov)} ({isd_cov[0]}–{isd_cov[-1]}); rain events in Dec–Feb of covered seasons:")
+print(ev_isd[ev_isd.season.isin(isd_cov) & ev_isd.start.dt.month.isin([12, 1, 2])][["start", "end", "season", "weather_en"]]
+      .to_string(index=False))
+
+
+def near(a: pd.Timestamp, b: pd.Timestamp, other: pd.DataFrame) -> bool:
+    return bool(((other.start <= b + pd.Timedelta(days=1)) & (other.end >= a - pd.Timedelta(days=1))).any())
+
+
+jma_in = ev_rain[ev_rain.start <= by_day.index.max()]
+confirmed = [r for r in jma_in.itertuples() if near(r.start, r.end, ev_isd)]
+record("B-rain", "JMA rain events confirmed by ISD WMO codes (±1 day)", "seven events (authors' list)",
+       f"{len(confirmed)}/{len(jma_in)}: " + "; ".join(f"{r.start:%Y-%m-%d} {'yes' if near(r.start, r.end, ev_isd) else 'no'}"
+                                                       for r in jma_in.itertuples()),
+       "—", "reported", f"ISD ends {by_day.index.max():%Y-%m-%d}; JMA events after that cannot be checked", basis="post hoc")
+# Diagnostic (post hoc, beyond the amendment): present weather describes the moment of each
+# 3-hourly report; rain between reports is coded as past weather (WMO 4561: 5 drizzle, 6 rain,
+# 8 showers) or as mixed present weather (68, 69, 83, 84). Checked for the unconfirmed events only.
+PAST_RAIN = {5, 6, 8}
+unconf = [r for r in jma_in.itertuples() if not near(r.start, r.end, ev_isd)]
+diag = []
+for r in unconf:
+    w = isd[(isd.day >= r.start - pd.Timedelta(days=1)) & (isd.day <= r.end + pd.Timedelta(days=1))]
+    pw = sorted({int(x) for x in w.past_weather.dropna() if x in PAST_RAIN})
+    mx = sorted({int(x) for x in w.ww.dropna() if x in WW_MIXED})
+    diag.append(f"{r.start:%Y-%m-%d}: past weather {pw or 'none'}, mixed present weather {mx or 'none'}")
+record("B-rain", "unconfirmed JMA events: rain between SYNOP reports (diagnostic)", "—",
+       "; ".join(diag) or "none", "—", "reported",
+       "past weather 6 = rain (WMO 4561); not part of the amended definition, which uses present weather only",
+       basis="post hoc")
+isd_only = ev_isd[[not near(r.start, r.end, ev_rain) for r in ev_isd.itertuples()]]
+isd_only_summer = isd_only[isd_only.season.isin(isd_cov)]
+record("B-rain", "rain events in ISD without a JMA event", "—",
+       f"{len(isd_only_summer)} in covered seasons" + (": " + "; ".join(
+           f"{r.start:%Y-%m-%d} ({r.weather_en})" for r in isd_only_summer.itertuples()) if len(isd_only_summer) else ""),
+       "—", "reported", "JMA summary on those days: " + ("; ".join(
+           f"{r.start:%Y-%m-%d} '{gloss(jma.set_index('date').summary_day.get(r.start, ''))} / "
+           f"{gloss(jma.set_index('date').summary_night.get(r.start, ''))}' "
+           f"({int((isd.day == r.start).sum())} reports, {int(((isd.day == r.start) & isd.ww.isin(WW_RAIN)).sum())} with rain)"
+           for r in isd_only_summer.itertuples()) or "—"), basis="post hoc")
+for name, ev in [("rain, primary", ev_isd), ("rain or mixed", isd_events(by_day.rain | by_day.mixed))]:
+    rs = sorted(int(x) for x in ev.season.unique() if x in isd_cov)
+    gaps = np.diff(rs)
+    counts = pd.Series(0.0, index=isd_cov)
+    counts.update(ev[ev.season.isin(isd_cov)].groupby("season").size().astype(float))
+    fit = sm.GLM(counts.to_numpy(), sm.add_constant(np.array(isd_cov, float)), family=sm.families.Poisson()).fit()
+    record("B-rain", f"ISD seasons with rain ({name})", f"seven: {AUTHORS_SEASONS}",
+           f"{len(rs)} covered seasons: {rs}; mean interval {gaps.mean():.1f} years; "
+           f"trend p = {float(fit.pvalues[1]):.2f} ({int(counts.sum())} events)", "—", "reported",
+           f"authors' seasons covered by ISD: {[x for x in AUTHORS_SEASONS if x in isd_cov]}", basis="post hoc")
+
 # Post hoc: the pre-registered window ends on 1 Jan 2022, so it catches the onset of the
 # January 2022 event itself (rain in the night of 1 Jan, local time, merged with 2 Jan).
 onset = ev_rain[(ev_rain.start <= "2022-01-01") & (ev_rain.end >= "2022-01-02")]

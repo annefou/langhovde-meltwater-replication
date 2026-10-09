@@ -95,6 +95,7 @@ Reproduction (deposited data, doi:10.17632/8wvtxg53ry.1; tolerances pre-register
 
 Replication (independent data):
 - JMA Syowa weather summaries 1990–2026: all seven of the authors' rain events confirmed; mean interval 4.4 years; no trend (p = 0.79).
+- NOAA ISD SYNOP reports with WMO present-weather codes (cross-check, 1990–2025): 7 rain seasons, mean interval 5.2 years, no trend (p = 0.89). Six of nine JMA rain events carry a rain code at an observation time. The other three (2 Feb 1997, 1 Jan 2004, 23 Dec 2017) appear only as rain between observations (past-weather code 6). ISD also confirms rain on 4 February 2018.
 - JMA hourly pressure: removing measured air-pressure variations shifts water levels by −0.32 to +0.23 m and changes no label.
 - AMSR 10 km melt flags: melt on 22–24 December and 3–6 January. Sentinel-2: surface water fraction near GNSS1 of 3.2% on 20 December, against 0.6% on 13 December.
 - Atmospheric-river catalogue (Favier 2025, doi:10.5281/zenodo.17165410): AR days 2–5 January, none in the December event.

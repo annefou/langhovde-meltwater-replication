@@ -290,3 +290,21 @@ print(f"JMA hourly: {len(jma_h)} hours, {jma_h.time.min()} to {jma_h.time.max()}
       f"pressure {jma_h.p_station_hpa.min():.1f}–{jma_h.p_station_hpa.max():.1f} hPa, "
       f"missing {int(jma_h.p_station_hpa.isna().sum())}")
 jma_h.to_parquet(CLEAN_DIR / "jma_syowa_hourly.parquet", index=False)
+
+# %% [markdown]
+# ## NOAA ISD present-weather codes for Syowa (Arm B cross-check)
+#
+# `MW1` is "ww,quality" (WMO code table 4677). A blank MW1 means no present-weather group
+# was reported, i.e. no significant weather, not missing data. Times are UTC.
+
+# %%
+# AY1 is past weather (WMO code table 4561, first digit), covering the period since the previous report.
+isd = pd.concat([pd.read_csv(f, dtype=str, usecols=lambda c: c in ("DATE", "REPORT_TYPE", "MW1", "AY1"))
+                 for f in sorted(Path("../data/raw/isd").glob("isd_89532099999_*.csv"))], ignore_index=True)
+isd = pd.DataFrame({"time": pd.to_datetime(isd.DATE), "report_type": isd.REPORT_TYPE,
+                    "ww": pd.to_numeric(isd.MW1.str.split(",").str[0], errors="coerce"),
+                    "ww_quality": isd.MW1.str.split(",").str[1],
+                    "past_weather": pd.to_numeric(isd.AY1.str[0], errors="coerce")}
+                   ).sort_values("time").reset_index(drop=True)
+print(f"ISD: {len(isd)} reports, {isd.time.min()} to {isd.time.max()} UTC; with ww: {int(isd.ww.notna().sum())}")
+isd.to_parquet(CLEAN_DIR / "isd_syowa_ww.parquet", index=False)
