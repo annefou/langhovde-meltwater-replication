@@ -1,0 +1,223 @@
+{
+  "schema_version": "1.0",
+  "kind": "forrt-chain-draft",
+  "chain_shape": "paper-rooted",
+  "source": {
+    "repository": "https://github.com/annefou/langhovde-meltwater-replication",
+    "commit": "c1dbe70ff2d5f5812f49769d17fdb306c4205336",
+    "figure": "figures/main_result.png"
+  },
+  "steps": [
+    {
+      "step": "01_quote",
+      "template_key": "ANNOTATE_QUOTATION",
+      "template_uri": "https://w3id.org/np/RA24onqmqTMsraJ7ypYFOuckmNWpo4Zv5gsLqhXt7xYPU",
+      "prefill": {
+        "paper": "10.1038/s41467-026-72724-x",
+        "quotation": "Our in-situ measurements confirm meltwater-driven acceleration of grounded ice in Antarctica.",
+        "comment": "Meltwater-driven acceleration through elevated basal water pressure is known from mountain glaciers and Greenland, but direct observations beneath grounded Antarctic ice are sparse. This sentence claims that link for Langhovde Glacier, based on borehole pressure and GNSS speed and uplift. The evidence comes from one site in one summer, and pressure was recorded for only one of the two speed-up events. With more melt expected along the Antarctic coast, how general this is matters."
+      },
+      "provenance": {
+        "paper": "CITATION.cff",
+        "quotation": "nanopubs/drafts/01_quote.md",
+        "comment": "nanopubs/drafts/01_quote.md"
+      },
+      "published_uri": null
+    },
+    {
+      "step": "02_aida",
+      "template_key": "AIDA_SENTENCE",
+      "template_uri": "https://w3id.org/np/RALmXhDw3rHcMveTgbv8VtWxijUHwnSqhCmtJFIPKWVaA",
+      "prefill": {
+        "aida": "Surface meltwater that reaches the bed of grounded Antarctic ice accelerates its flow.",
+        "topic": [
+          {
+            "uri": "http://www.wikidata.org/entity/Q360925",
+            "label": "meltwater"
+          },
+          {
+            "uri": "http://www.wikidata.org/entity/Q35666",
+            "label": "glacier"
+          },
+          {
+            "uri": "http://www.wikidata.org/entity/Q12599",
+            "label": "ice sheet"
+          },
+          {
+            "uri": "http://www.wikidata.org/entity/Q4290336",
+            "label": "ice-sheet dynamics"
+          }
+        ],
+        "st3": [
+          {
+            "dataset": "https://doi.org/10.17632/8wvtxg53ry.1"
+          }
+        ]
+      },
+      "provenance": {
+        "aida": "nanopubs/drafts/02_aida.md",
+        "topic": "nanopubs/drafts/02_aida.md + Wikidata",
+        "st3": "nanopubs/drafts/02_aida.md"
+      },
+      "published_uri": null
+    },
+    {
+      "step": "03_claim",
+      "template_key": "FORRT_CLAIM",
+      "template_uri": "https://w3id.org/np/RAZWyM8D16ya3S1zhCvrG1f0iSpd9-8onVWp0FTvvX7LQ",
+      "prefill": {
+        "claim": "langhovde-meltwater-acceleration-claim",
+        "label": "Meltwater-driven acceleration of grounded ice at Langhovde Glacier, Antarctica (Sugiyama et al. 2026)",
+        "forrtType": "https://w3id.org/sciencelive/o/terms/descriptive_pattern-FORRT-Claim",
+        "source": "https://doi.org/10.1038/s41467-026-72724-x"
+      },
+      "provenance": {
+        "claim": "nanopubs/drafts/03_claim.md",
+        "label": "nanopubs/drafts/03_claim.md",
+        "forrtType": "nanopubs/drafts/03_claim.md",
+        "source": "CITATION.cff"
+      },
+      "manual": [
+        "forrtType"
+      ],
+      "published_uri": null
+    },
+    {
+      "step": "04_study",
+      "template_key": "FORRT_REPLICATION",
+      "template_uri": "https://w3id.org/np/RAuLEjPp-4dTvPwMkfHggTto1CgjIftiGRAgHlyeEonjQ",
+      "prefill": {
+        "study": "langhovde-meltwater-acceleration-study",
+        "label": "Reproduction and partial replication of Sugiyama et al. (2026): meltwater, basal pressure and ice speed at Langhovde Glacier",
+        "type": "https://w3id.org/sciencelive/o/terms/Reproduction-Replication-Study",
+        "scope": "The claim that surface meltwater reaching the bed accelerated grounded ice at Langhovde Glacier, East Antarctica, in summer 2021/22, tested through the observations it rests on:\n- basal water pressure relative to the flotation level, and its rise during the January 2022 rain and melt event;\n- the size of the speed-up at a grounded and a floating GNSS station during the December 2021 and January 2022 events;\n- uplift of the grounded station and its absence on floating ice;\n- the timing of the pressure and speed peaks;\n- the tidal connection between the bed and the sub-shelf cavity, and the head difference to a borehole below the grounding line;\n- the context that summer 2021/22 was unexceptional, with rare rain and no trend in temperature, positive degree-days or rain frequency.\n\nThe causal mechanism is assessed only through these observations. Out of scope, because no data were deposited: freshwater at the bed (CTD), borehole video, drone imagery, sub-shelf fauna, and changes in ocean forcing or buttressing.",
+        "methodology": "Reproduction (authors' data):\n- Input: the Mendeley deposit (doi:10.17632/8wvtxg53ry.1), downloaded and checked against the repository's published SHA-256 checksums, and analysed with new Python code. The authors' MATLAB scripts serve only as a reference for file formats, constants and conversions.\n- Pre-registration: a tolerance and decision rule for each sub-claim were committed in ANALYSIS_PLAN.md before analysis. Later changes are dated amendments, and every result is labelled pre-registered or post hoc.\n- Pressure: borehole pressures are converted to water level and to a fraction of flotation as in the authors' code; the paper's Eq. 1 is reported alongside.\n- GNSS: positions are projected to UTM zone 37S and smoothed with a Gaussian-kernel local linear regression. This reconstructs the authors' missing local_regression function, identified by matching the deposited fig3.eps. Horizontal speed is differenced from the smoothed positions. Data gaps are detected from the timestamps and optionally bridged with a not-a-knot cubic spline, as in the authors' supplementary figure.\n- Speed-up: computed against four declared background-speed baselines (local, campaign median, campaign trend, 7-day running median), at smoothing bandwidths of 1, 3, 6 and 12 h, and compared with speed fluctuations outside the events.\n- Tide: the authors' BH2203 correlation is repeated, then extended to the grounded boreholes with a 25 h high-pass filter and a lag scan. The clock of the tide file is checked against the IOC record of the same gauge.\n\nReplication (independent data, each test pre-registered before its data were downloaded):\n- Japan Meteorological Agency (JMA) Syowa daily weather summaries for rain frequency, 1990–2026, cross-checked against the same station's SYNOP reports in NOAA's Integrated Surface Database (WMO present-weather codes);\n- JMA hourly station pressure for the borehole correction;\n- JMA daily temperatures, and ERA5 2 m temperature from ECMWF's cloud-optimised archive, for the positive degree-day context;\n- passive-microwave melt flags (SSM/I 25 km, AMSR 10 km) and Sentinel-2 NDWI for surface melt;\n- an atmospheric-river catalogue (Favier 2025) for the January event;\n- ITS_LIVE image-pair velocities, to test whether the speed-up can be detected independently.\n\nThe whole pipeline runs with pixi and Snakemake from a fresh checkout, and the GNSS processing is guarded by unit and regression tests.",
+        "deviation": "- Smoothing: the Methods state a Gaussian filter with a 1 h bandwidth, but the deposited code and published figures use 12 h, as identified from fig3.eps. 12 h is primary; 1, 3 and 6 h are reported.\n- Atmospheric-pressure correction: the paper uses hourly air pressure from the on-glacier station, which is embargoed. The code's constant offsets are primary, with JMA Syowa hourly pressure as a sensitivity case.\n- Tide: the deposit's tide file is in Syowa local time (UTC+3), and the authors shift it by 2.5 h. That shift is kept for the reproduction; the lag analysis uses UTC.\n- Data gaps are detected from timestamps instead of hard-coded row numbers. This gives identical segments.\n- Speed is differenced with the authors' schemes at 12 h (forward at GNSS2, centred at GNSS1) and centred at other bandwidths.\n- The paper does not define \"background speed\"; four baselines are declared instead.\n- Event windows come from the paper's text. The windows shaded in the authors' code are reported alongside.\n- Correlations for the grounded boreholes, which the authors show only as a scatter plot, are computed.\n- Rain frequency, air pressure and climate context use independent public records instead of the authors' extracts.",
+        "keywordSelection": [
+          {
+            "uri": "http://www.wikidata.org/entity/Q6486120",
+            "label": "Langhovde Glacier"
+          },
+          {
+            "uri": "http://www.wikidata.org/entity/Q360925",
+            "label": "meltwater"
+          },
+          {
+            "uri": "http://www.wikidata.org/entity/Q3962812",
+            "label": "Basal sliding"
+          },
+          {
+            "uri": "http://www.wikidata.org/entity/Q571430",
+            "label": "Antarctic ice sheet"
+          }
+        ],
+        "disciplineSelection": {
+          "uri": "http://www.wikidata.org/entity/Q52120",
+          "label": "glaciology"
+        }
+      },
+      "provenance": {
+        "study": "nanopubs/drafts/04_study.md",
+        "label": "nanopubs/drafts/04_study.md",
+        "type": "nanopubs/drafts/04_study.md",
+        "scope": "nanopubs/drafts/04_study.md",
+        "methodology": "nanopubs/drafts/04_study.md",
+        "deviation": "nanopubs/drafts/04_study.md",
+        "keywordSelection": "nanopubs/drafts/04_study.md + Wikidata",
+        "disciplineSelection": "nanopubs/drafts/04_study.md + Wikidata"
+      },
+      "manual": [
+        "type"
+      ],
+      "published_uri": null
+    },
+    {
+      "step": "05_outcome",
+      "template_key": "FORRT_REPLICATION_OUTCOME",
+      "template_uri": "https://w3id.org/np/RA2zljn0Nw9SadppOyxZoh-_Rxosslrq-vYG-p9SttnJE",
+      "prefill": {
+        "outcome": "langhovde-meltwater-acceleration-outcome-01",
+        "label": "Reproduction and partial replication of meltwater-driven acceleration at Langhovde Glacier (Sugiyama et al. 2026)",
+        "repo": "https://doi.org/10.5281/zenodo.23257925",
+        "date": "2026-10-09",
+        "validationStatus": "https://w3id.org/sciencelive/o/terms/PartiallySupported",
+        "conclusion": "The authors' deposited data, processed with our own Python code, reproduce the paper's central observations. During the rain and melt event of 2–6 January 2022, basal water pressure at BH2201 rose by 20.2 m to 51.0 m a.s.l. (97.1% of flotation), ice speed rose by 12.5% at GNSS1 and 11.1% at GNSS2, and the GNSS1 speed peak came 2 h before the pressure peak. During the December warm spell, speed rose by 22.7% (GNSS1) and 21.8% (GNSS2), and the grounded station rose by 126 mm while the floating station stayed within 3 mm. Independent data support the setting: satellite melt flags and Sentinel-2 surface water during the December event, an atmospheric river during the January event, and Japan Meteorological Agency records confirming that rain is rare at Syowa and that summer 2021/22 had a below-average positive degree-day sum.\n\nThe headline claim is partially supported. It rests on one fully instrumented event at one site in one season: basal pressure was measured only for the January event. The reported 10–20% speed-up holds only with the 12 h smoothing used to make the published figures, whereas the Methods state 1 h; with 1 h, the same events give 44–72%. Two ranges stated in general terms (\"93–97% of flotation\", \"9–44 m\" head difference) are not reproduced over the whole record: the first holds for the January event, and the upper bound of the second is not reached in any window we could define from the text. No independent dataset can confirm the speed-up: satellite image-pair velocities cannot resolve it.",
+        "evidence": "Reproduction (deposited data, doi:10.17632/8wvtxg53ry.1; tolerances pre-registered before analysis):\n- Processing: the two MATLAB functions missing from the deposit were rebuilt and identified against the authors' own fig3.eps. A Gaussian local linear regression with sigma = 12 h reproduces every plotted speed curve to 0.00004–0.00007 m/d RMS and the uplift curve to 0.06 mm RMS; 11 h and 13 h are about 9 times worse.\n- C2 pressure event: pre-event level 28.5–32.6 m (paper 29–33 m); peak 51.0 m at 23:07 UTC on 3 January (paper 51 m, 97%); rise 20.2 m (paper 20 m); drop of 7.9 m within 1 h (paper about 10 m). Decline over 10 days: 24.0 m measured from 1 h after the peak, 33.1 m measured from the peak (paper about 30 m).\n- C1: 92.5–97.1% of flotation during the January event (paper 93–97%). Mid-January levels were 89.5–91.9% (BH2202) and from 90.1% (BH2201).\n- C3 speed-up (12 h, local baseline, observed data): +22.7% and +12.5% at GNSS1, +21.8% and +11.1% at GNSS2 (paper 10–20%). The 95th percentile of speed fluctuations outside the events is 2.1–2.4%. With 1 h smoothing: +44% to +72%, against fluctuations of 15.6–28.3%.\n- C4 uplift: 126 mm at GNSS1 in December (paper 120 mm; 90 mm of it observed before the data gap); 10 mm in January (paper about 10 mm); 3 mm at the floating GNSS2.\n- C6: GNSS1 speed peak 2 h before the BH2201 pressure peak; 1–15 h before it at both stations and every smoothing bandwidth.\n- C7: BH2203 against tide, r = 0.965 and 0.970 (paper 0.965 and 0.970). Grounded boreholes before their late anomalies: r = 0.70 (BH2201) and 0.91 (BH2202), amplitude ratio 0.92 and 0.87 m of water per m of tide. The deposit's tide file is Syowa local time (UTC+3; r = 0.99993 against the IOC record), and the boreholes respond about 15 min after the gauge.\n- C8: head difference BH2201 − BH2203 of 7.6–122.9 m over the common record, and 7.6–58.4 m before BH2201 rose above flotation (paper 9–44 m). Partially reproduced: the lower bound matches; the window behind the upper bound is not stated.\n- C9: positive degree-day sum 10.6 and 18.18 °C d (paper 10.6 and 18.2); no trend (p = 0.65); 29.8 mm of rain on 2 January (paper about 30 mm).\n\nReplication (independent data):\n- JMA Syowa weather summaries 1990–2026: all seven of the authors' rain events confirmed; mean interval 4.4 years; no trend (p = 0.79).\n- NOAA ISD SYNOP reports with WMO present-weather codes (cross-check, 1990–2025): 7 rain seasons, mean interval 5.2 years, no trend (p = 0.89). Six of nine JMA rain events carry a rain code at an observation time. The other three (2 Feb 1997, 1 Jan 2004, 23 Dec 2017) appear only as rain between observations (past-weather code 6). ISD also confirms rain on 4 February 2018.\n- JMA hourly pressure: removing measured air-pressure variations shifts water levels by −0.32 to +0.23 m and changes no label.\n- AMSR 10 km melt flags: melt on 22–24 December and 3–6 January. Sentinel-2: surface water fraction near GNSS1 of 3.2% on 20 December, against 0.6% on 13 December.\n- Atmospheric-river catalogue (Favier 2025, doi:10.5281/zenodo.17165410): AR days 2–5 January, none in the December event.\n- ERA5 at the glacier: 2021/22 positive degree-day sum below the 1989/90–2025/26 median (32nd percentile).",
+        "confidenceLevel": "https://w3id.org/sciencelive/o/terms/HighConfidence",
+        "limitations": "- Sample size: one glacier, one season, two GNSS stations, and one speed-up event with basal pressure data. The abstract's \"periods of intensive melting and rain\" covers two events, but pressure exists for one.\n- Smoothing: the Methods state a 1 h filter; the published figures use 12 h. The size of the reported speed-up depends on this choice.\n- Interpolation: the December speed peak at GNSS1 (\"peaked on 24 December\", \"similar or even greater acceleration\") lies in a spline-filled data gap. Observed data show a speed-up similar to GNSS2's, not greater.\n- No independent speed data: ITS_LIVE had 25 valid image pairs out of 155, none shorter than 8 days, with 0.44 m/d RMS against GNSS at GNSS1. The authors' raw GNSS, needed to reprocess positions kinematically as Reviewer 1 suggested, is embargoed at NIPR ADS (A20220506-004).\n- Scope of stated ranges: \"93–97% of flotation\" fits the January event, not the whole record. The 9–44 m head difference is reproduced at its lower bound only; the paper does not state its window. The 10-day decline matches only if measured from the peak.\n- Rain frequency: the seven events are December–January only. JMA also records rain on 2 February 1997 and 4 February 2018, the latter contradicting \"the last recorded rain at Syowa Station was in December 2017\".\n- Climate context: 2021/22 had more December–January satellite melt days than the median (7 vs 0 at 25 km, 8 vs 2 at 10 km), and 13 December–January atmospheric-river days (95th percentile of 42 summers; maximum 14). These do not contradict the low positive degree-day sum but qualify the inference that meltwater is usually more abundant than in 2021/22.\n- Untested: freshwater at the bed (CTD), borehole video, drone imagery, ocean or buttressing changes. Measured air pressure from the on-glacier station is embargoed; the independent Yukidori Zawa station was not retrievable by script. ERA5 at this coastal cell runs 2.3 °C colder than the glacier station and shows a step at its September 2007 change of sea-surface forcing, so it was not used for trends."
+      },
+      "provenance": {
+        "outcome": "nanopubs/drafts/05_outcome.md",
+        "label": "nanopubs/drafts/05_outcome.md",
+        "repo": "CITATION.cff",
+        "date": "CITATION.cff",
+        "validationStatus": "nanopubs/drafts/05_outcome.md",
+        "conclusion": "nanopubs/drafts/05_outcome.md",
+        "evidence": "nanopubs/drafts/05_outcome.md",
+        "confidenceLevel": "nanopubs/drafts/05_outcome.md",
+        "limitations": "nanopubs/drafts/05_outcome.md"
+      },
+      "manual": [
+        "validationStatus",
+        "confidenceLevel"
+      ],
+      "published_uri": null
+    },
+    {
+      "step": "06_citation",
+      "template_key": "CITATION_CITO",
+      "template_uri": "https://w3id.org/np/RA43F9EoOuzF0xoNUnCMNyFsfIqlsuWDdPHCnN0wCdCAw",
+      "prefill": {
+        "st02": [
+          {
+            "cites": "http://purl.org/spar/cito/qualifies",
+            "cited": "https://doi.org/10.1038/s41467-026-72724-x"
+          },
+          {
+            "cites": "http://purl.org/spar/cito/usesDataFrom",
+            "cited": "https://doi.org/10.17632/8wvtxg53ry.1"
+          },
+          {
+            "cites": "http://purl.org/spar/cito/usesDataFrom",
+            "cited": "https://doi.org/10.5281/zenodo.17165410"
+          },
+          {
+            "cites": "http://purl.org/spar/cito/usesDataFrom",
+            "cited": "https://doi.org/10.24381/cds.adbb2d47"
+          }
+        ]
+      },
+      "provenance": {
+        "st02": "cites = nanopubs/drafts/06_citation.md; cited = CITATION.cff references[article]; further rows = nanopubs/drafts/06_citation.md"
+      },
+      "published_uri": null
+    }
+  ],
+  "carry_forward": [
+    {
+      "from": "01_quote",
+      "into": "02_aida",
+      "field": "project"
+    },
+    {
+      "from": "02_aida",
+      "into": "03_claim",
+      "field": "aida"
+    },
+    {
+      "from": "03_claim",
+      "into": "04_study",
+      "field": "claim"
+    },
+    {
+      "from": "04_study",
+      "into": "05_outcome",
+      "field": "study"
+    },
+    {
+      "from": "05_outcome",
+      "into": "06_citation",
+      "field": "work"
+    }
+  ]
+}
